@@ -1,0 +1,580 @@
+from flask import (
+    Flask,
+    render_template,
+    request,
+    session,
+    flash,
+    jsonify,
+    redirect,
+    url_for,
+)
+from werkzeug.security import generate_password_hash, check_password_hash
+import numpy as np
+import joblib
+import os
+import json
+from flask import Flask, render_template, request, redirect, url_for, session, jsonify
+from datetime import datetime
+
+# -----------------------------------------------------------------------------
+# CONFIG FLASK
+# -----------------------------------------------------------------------------
+app = Flask(__name__)
+app.secret_key = "change-me"  # ⚠️ à changer en prod (clé secrète forte)
+
+# -----------------------------------------------------------------------------
+# CHEMINS MODELES & FICHIERS
+# -----------------------------------------------------------------------------
+MODEL_DIR = "models"
+MODEL_PATH = os.path.join(MODEL_DIR, "clf_depression.pkl")
+KMEANS_PATH = os.path.join(MODEL_DIR, "kmeans_cluster.pkl")
+SEVERITY_PATH = os.path.join(MODEL_DIR, "severity_regressor.pkl")
+CLUSTER_RECO_PATH = os.path.join(MODEL_DIR, "cluster_recommendations.json")
+CLUSTER_AUTO_RECO_PATH = os.path.join(MODEL_DIR, "cluster_auto_reco.json")
+
+USERS_FILE = "users.json"
+
+# -----------------------------------------------------------------------------
+# VARIABLES GLOBALES
+# -----------------------------------------------------------------------------
+load_error = None
+kmeans_error = None
+severity_error = None
+cluster_reco = {}
+cluster_reco_auto = {}
+
+CLUSTER_LABELS = {
+    0: "Profil à Forte Pression Académique et Risque Élevé",
+    1: "Étudiants Équilibrés, Satisfaits et Faible Risque",
+    2: "Forte Pression sur l'Etudiant",
+    3: "Étudiants Très Satisfaits Mais Manque de Sommeil (Faible Risque)",
+    4: "Étudiants Modérément Satisfaits avec Stress Moyen (Risque Bas)",
+}
+
+FEATURES = [
+    "Gender",
+    "Age",
+    "Profession",
+    "Academic Pressure",
+    "CGPA",
+    "Study Satisfaction",
+    "Sleep Duration",
+    "Dietary Habits",
+    "Degree",
+    "Work/Study Hours",
+    "Financial Stress",
+    "Family History of Mental Illness",
+    "cluster",
+]
+
+CLUSTER_FEATURES = [
+    "Academic Pressure",
+    "Sleep Duration",
+    "Financial Stress",
+    "Study Satisfaction",
+]
+
+# -----------------------------------------------------------------------------
+# GESTION UTILISATEURS (JSON)
+# -----------------------------------------------------------------------------
+def load_users():
+    try:
+        with open(USERS_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+            # Your users.json format: {"users": [ ... ]}
+            if isinstance(data, dict) and "users" in data and isinstance(data["users"], list):
+                return data["users"]
+
+            # If someday you store it directly as a list
+            if isinstance(data, list):
+                return data
+
+            return []
+    except FileNotFoundError:
+        return []
+    except json.JSONDecodeError:
+        return []
+
+
+def compute_age_from_dob(dob_str):
+    """Very simple age computation from 'YYYY-MM-DD'."""
+    try:
+        birth = datetime.strptime(dob_str, "%Y-%m-%d").date()
+        today = datetime.today().date()
+        return today.year - birth.year - ((today.month, today.day) < (birth.month, birth.day))
+    except Exception:
+        return None
+
+def save_users(users):
+    """Sauvegarde la liste complète des utilisateurs dans users.json."""
+    data = {"users": users}
+    with open(USERS_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=4, ensure_ascii=False)
+
+
+def find_user_by_email(email):
+    """Retourne l'utilisateur correspondant à l'email, ou None."""
+    users = load_users()  # now guaranteed to be a LIST
+    for u in users:
+        if isinstance(u, dict) and u.get("email") == email:
+            return u
+    return None
+
+def get_current_user():
+    email = session.get("user_email")
+    if not email:
+        return None
+    return find_user_by_email(email)
+
+
+# -----------------------------------------------------------------------------
+# CHARGEMENT DES MODELES ML
+# -----------------------------------------------------------------------------
+try:
+    clf = joblib.load(MODEL_PATH)
+except Exception as exc:
+    clf = None
+    load_error = f"Failed to load classifier: {exc}"
+
+try:
+    kmeans = joblib.load(KMEANS_PATH)
+except Exception as exc:
+    kmeans = None
+    kmeans_error = f"Failed to load KMeans: {exc}"
+
+try:
+    severity_model = joblib.load(SEVERITY_PATH)
+except Exception as exc:
+    severity_model = None
+    severity_error = f"Failed to load severity model: {exc}"
+
+try:
+    if os.path.exists(CLUSTER_RECO_PATH):
+        with open(CLUSTER_RECO_PATH, "r", encoding="utf-8") as f:
+            cluster_reco = json.load(f)
+    if os.path.exists(CLUSTER_AUTO_RECO_PATH):
+        with open(CLUSTER_AUTO_RECO_PATH, "r", encoding="utf-8") as f:
+            cluster_reco_auto = json.load(f)
+except Exception:
+    # do not hard-fail if JSON malformed
+    cluster_reco = {}
+    cluster_reco_auto = {}
+
+# -----------------------------------------------------------------------------
+# FONCTIONS UTILITAIRES ML
+# -----------------------------------------------------------------------------
+def build_feature_vector(form):
+    def get_float(name, default=0.0):
+        val = form.get(name, "")
+        try:
+            return float(val)
+        except Exception:
+            return default
+
+    values = [
+        get_float("gender"),
+        get_float("age"),
+        get_float("profession"),
+        get_float("academic_pressure"),
+        get_float("cgpa"),
+        get_float("study_satisfaction"),
+        get_float("sleep_duration"),
+        get_float("dietary_habits"),
+        get_float("degree"),
+        get_float("work_hours"),
+        get_float("financial_stress"),
+        get_float("family_history"),
+    ]
+    values.append(0.0)  # cluster placeholder
+    return np.array([values])
+
+
+def build_cluster_vector(form):
+    """Use only the 4 cluster features, in the right order."""
+    def get_float(name, default=0.0):
+        val = form.get(name, "")
+        try:
+            return float(val)
+        except Exception:
+            return default
+
+    return np.array(
+        [
+            [
+                get_float("academic_pressure"),
+                get_float("sleep_duration"),
+                get_float("financial_stress"),
+                get_float("study_satisfaction"),
+            ]
+        ]
+    )
+
+
+def make_recommendations(y_proba: float):
+    if y_proba < 0.3:
+        return "Low"
+    elif y_proba < 0.7:
+        return "Medium"
+    return "High"
+
+
+def full_assessment(form):
+    """
+    Run classification, severity regression, clustering, and map recommendations.
+    form = request.form (HTML) ou dict JSON (API).
+    """
+    x = build_feature_vector(form)
+    x_cluster = build_cluster_vector(form)
+
+    # Clustering
+    if kmeans is not None:
+        cluster_id = int(kmeans.predict(x_cluster)[0])
+        x[:, -1] = cluster_id  # inject cluster for downstream models
+    else:
+        cluster_id = 0
+
+    # Classification
+    y_pred = clf.predict(x)[0]
+    if hasattr(clf, "predict_proba"):
+        y_proba = clf.predict_proba(x)[0, 1]
+    else:
+        y_proba = float(y_pred)
+    y_proba = float(np.clip(y_proba, 0.0, 1.0))
+
+    # Severity
+    severity_score = None
+    if severity_model is not None:
+        try:
+            severity_score = float(severity_model.predict(x)[0])
+            severity_score = float(np.clip(severity_score, 0.0, 1.0))
+        except Exception:
+            severity_score = None
+
+    risk_level = make_recommendations(y_proba)
+
+    cid_key = str(cluster_id)
+    reco_fixed = cluster_reco.get(cid_key, cluster_reco.get(cluster_id))
+    cluster_name = CLUSTER_LABELS.get(cluster_id, f"Cluster {cluster_id}")
+
+    return {
+        "label": "At risk of depression" if y_pred == 1 else "Not at risk of depression",
+        "proba": float(y_proba),
+        "risk_level": risk_level,
+        "cluster_id": cluster_id,
+        "cluster_name": cluster_name,
+        "reco_fixed": reco_fixed,
+        "severity": severity_score,
+    }
+
+# -----------------------------------------------------------------------------
+# ROUTES PAGES (VUES HTML)
+# -----------------------------------------------------------------------------
+@app.route("/")
+def index():
+    """
+    Page d'accueil → index1.html
+    """
+    if load_error:
+        flash(load_error)
+    if kmeans_error:
+        flash(kmeans_error)
+    if severity_error:
+        flash(severity_error)
+    return render_template("index1.html", load_error=load_error)
+
+
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    # 🔒 Si déjà connecté, on empêche de recréer un compte
+    if "user_email" in session:
+        flash("Vous êtes déjà connecté. Déconnectez-vous pour créer un nouveau compte.")
+        role = session.get("user_role")
+        if role == "scientist":
+            return redirect(url_for("datascientist_page"))
+        else:
+            return redirect(url_for("student_page"))
+
+    if request.method == "POST":
+        first_name = request.form.get("first_name")
+        last_name = request.form.get("last_name")
+        dob = request.form.get("dob")
+        role = request.form.get("role")  # scientist ou other
+        gender = request.form.get("gender")
+        profession = request.form.get("profession")
+        email = request.form.get("email")
+        password = request.form.get("password")
+
+        if not email or not password:
+            flash("Email et mot de passe sont obligatoires.")
+            return redirect(url_for("register"))
+
+        # Vérifier si un utilisateur avec cet email existe déjà
+        if find_user_by_email(email) is not None:
+            flash("Un compte avec cet email existe déjà.")
+            return redirect(url_for("register"))
+
+        # Créer un nouvel utilisateur
+        users = load_users()
+        users.append({
+            "first_name": first_name,
+            "last_name": last_name,
+            "dob": dob,
+            "role": role,
+            "gender": gender,
+            "profession": profession,
+            "email": email,
+            "password": generate_password_hash(password)
+        })
+        save_users(users)
+
+        flash("Compte créé avec succès ! Vous pouvez maintenant vous connecter.")
+        return redirect(url_for("login"))
+
+    return render_template("register.html")
+
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    # 🔒 Si déjà connecté, on ne laisse pas aller sur /login
+    if "user_email" in session:
+        flash("Vous êtes déjà connecté. Déconnectez-vous pour changer de compte.")
+        # Redirection selon le rôle actuel
+        role = session.get("user_role")
+        if role == "scientist":
+            return redirect(url_for("datascientist_page"))
+        else:
+            return redirect(url_for("student_page"))
+
+    if request.method == "POST":
+        email = request.form.get("email")
+        password = request.form.get("password")
+
+        user = find_user_by_email(email)
+
+        if user and check_password_hash(user["password"], password):
+            # Stocker quelques infos en session
+            session["user_email"] = user["email"]
+            session["user_role"] = user["role"]
+            session["user_name"] = user.get("first_name", "")
+
+            # Redirection selon le rôle
+            if user["role"] == "scientist":
+                return redirect(url_for("datascientist_page"))
+            else:
+                return redirect(url_for("student_page"))
+
+        flash("Identifiants incorrects.")
+        return redirect(url_for("login"))
+
+    return render_template("login.html")
+
+
+
+@app.route("/logout")
+def logout():
+    """
+    Déconnexion utilisateur.
+    """
+    session.clear()
+    flash("Vous avez été déconnecté.")
+    return redirect(url_for("index"))
+
+
+@app.route("/student", methods=["GET"])
+def student_page():
+    user = get_current_user()
+    if not user or user.get("role") not in ("student", "other"):
+        # Only students can see this page
+        return redirect(url_for("login"))
+
+    # Prepare numeric features for the model from the user profile
+    # You may already store them as numeric codes in users.json – if so, just use them directly
+    gender = user.get("gender_num")  # e.g. 0 / 1, or adapt
+    profession = user.get("profession_num")
+    age = user.get("age_num")
+
+    # If not stored, derive them:
+    if age is None and user.get("dob"):
+        age = compute_age_from_dob(user["dob"])
+
+    # Example: convert string gender to numeric if needed
+    if gender is None:
+        g = (user.get("gender") or "").lower()
+        if g in ("male", "m"):
+            gender = 1
+        elif g in ("female", "f"):
+            gender = 0
+
+    # Example: profession mapping if you stored it as a string
+    if profession is None:
+        prof = (user.get("profession") or "").lower()
+        mapping = {
+            "student": 0,
+            "employee": 1,
+            "unemployed": 2,
+            "freelancer": 3,
+        }
+        profession = mapping.get(prof)
+
+    # Pass these to the template so we can send them as hidden fields
+    profile_features = {
+        "gender": gender,
+        "age": age,
+        "profession": profession,
+    }
+
+    return render_template("student.html", profile=profile_features)
+
+
+@app.route("/datascientist")
+def datascientist_page():
+    """
+    Portail data scientist.
+    """
+    # if "user_email" not in session:
+    #     return redirect(url_for("login"))
+    return render_template("datascientist.html")
+
+
+@app.route("/predict", methods=["GET", "POST"])
+def predict():
+    """
+    Formulaire /predict classique (HTML) + résultat sur result.html.
+    """
+    if request.method == "GET":
+        if load_error:
+            flash(load_error)
+        if kmeans_error:
+            flash(kmeans_error)
+        if severity_error:
+            flash(severity_error)
+        return render_template("predict.html", load_error=load_error)
+
+    if clf is None:
+        flash("Model is not available. Check server logs.")
+        return render_template("predict.html"), 500
+
+    # Calcul ML
+    result = full_assessment(request.form)
+
+    # Récupérer les indicateurs individuels depuis le formulaire
+    stress_academic = request.form.get("academic_pressure")
+    sleep_quality = request.form.get("sleep_duration")
+    wellbeing = request.form.get("study_satisfaction")
+
+    return render_template(
+        "result.html",
+        label=result["label"],
+        proba=f"{result['proba']:.3f}",
+        risk_level=result["risk_level"],
+        cluster_label=result["cluster_id"],
+        cluster_name=result.get("cluster_name"),
+        severity_score=(
+            f"{result['severity']:.3f}" if result["severity"] is not None else None
+        ),
+        severity_raw=result["severity"],
+        reco_fixed=result["reco_fixed"],
+        reco_auto=None,
+        # Pour la carte "Score détaillé"
+        stress_academic=stress_academic,
+        sleep_quality=sleep_quality,
+        wellbeing=wellbeing,
+    )
+
+# -----------------------------------------------------------------------------
+# ROUTES API (JSON) POUR student.html
+# -----------------------------------------------------------------------------
+@app.route("/api/predict", methods=["POST"])
+def api_predict():
+    """
+    JSON API used by student.html.
+    Expects all model features in the JSON body.
+    """
+    data = request.get_json() or {}
+
+    # If some demographic features are missing, and user is logged in,
+    # we can still try to fill them from the profile (defensive).
+    user = get_current_user()
+    if user:
+        if "gender" not in data or data["gender"] in ("", None):
+            data["gender"] = (
+                user.get("gender_num")
+                or (1 if (user.get("gender", "").lower() in ("male", "m")) else 0)
+            )
+        if "profession" not in data or data["profession"] in ("", None):
+            data["profession"] = user.get("profession_num")
+        if "age" not in data or data["age"] in ("", None):
+            if user.get("age_num") is not None:
+                data["age"] = user["age_num"]
+            elif user.get("dob"):
+                data["age"] = compute_age_from_dob(user["dob"])
+
+    # Run the same pipeline as in /predict
+    try:
+        result = full_assessment(data)
+    except Exception as exc:
+        return jsonify({"success": False, "error": str(exc)}), 400
+
+    # Convert severity from 0..1 to 0..100 for the gauge in student.html
+    severity_pct = round(float(result["severity"]) * 100, 1)
+
+    return jsonify({
+        "success": True,
+        "risk_level": result["risk_level"],      # "Low / Moderate / High" etc.
+        "severity_score": severity_pct,          # 0..100
+        "cluster_label": result["cluster_name"], # e.g. "Resilient Balanced"
+        # Optional extra fields if you want:
+        "model_label": result["label"],
+        "severity_raw": result["severity"],
+    })
+
+
+
+@app.route("/api/cluster", methods=["POST"])
+def api_cluster():
+    data = request.json
+    if not data:
+        return jsonify({"error": "Missing JSON body"}), 400
+
+    x_cluster = build_cluster_vector(data)
+    cluster_id = int(kmeans.predict(x_cluster)[0]) if kmeans is not None else 0
+
+    return jsonify(
+        {
+            "cluster": cluster_id,
+            "profile_name": CLUSTER_LABELS.get(
+                cluster_id, f"Cluster {cluster_id}"
+            ),
+            "description": cluster_reco.get(str(cluster_id), "No description available."),
+        }
+    )
+
+
+@app.route("/api/recommend", methods=["POST"])
+def api_recommend():
+    data = request.json
+    if not data:
+        return jsonify({"error": "Missing JSON body"}), 400
+
+    severity = float(data.get("severity_score", 0))
+
+    # Simple règle de reco (tu peux affiner)
+    if severity < 0.3:
+        recs = ["Maintain healthy habits", "Stay socially connected"]
+    elif severity < 0.7:
+        recs = ["Reduce academic pressure", "Improve sleep quality"]
+    else:
+        recs = [
+            "Consider speaking with a counselor",
+            "Seek support from a professional",
+        ]
+
+    return jsonify({"recommendations": recs})
+
+# -----------------------------------------------------------------------------
+# MAIN
+# -----------------------------------------------------------------------------
+if __name__ == "__main__":
+    app.run(debug=True)

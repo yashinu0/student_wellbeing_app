@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Portal - Well-Being Analytics</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head>
+<body class="page-student">
+    <!-- Navigation -->
+    <nav>
+        <div class="logo">📊 Well-Being Analytics</div>
+        {% set role = session.get('user_role') %}
+        <ul>
+            <li><a href="/">Home</a></li>
+            {% if role == 'admin' %}
+                <li><a href="/admin">Admin</a></li>
+            {% elif role == 'scientist' %}
+                <li><a href="/datascientist">Data Scientist</a></li>
+            {% elif role in ('student','other') %}
+                <li><a href="/student">Student Portal</a></li>
+            {% else %}
+                <li><a href="/student">Student Portal</a></li>
+                <li><a href="/datascientist">Data Scientist</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container">
+        <h1>🎓 Student Well-Being Portal</h1>
+        <p class="page-subtitle">Discover your mental health profile and personalized recommendations</p>
+
+        <!-- Intro Section -->
+        <section class="section">
+            <h2>📌 Welcome</h2>
+            <p style="margin-bottom: 1rem; color: #6b5a7f;">
+                This portal helps you understand your well-being by analyzing key factors like sleep, academic pressure, 
+                social support, and more. Use the tools below to get personalized insights.
+            </p>
+            <div class="warning">
+                ⚠️ <strong>Important:</strong> This is NOT a medical diagnosis. If you're experiencing mental health concerns, 
+                please reach out to a mental health professional or counselor.
+            </div>
+        </section>
+
+        <!-- Objective 1: Risk Detection -->
+        <section class="section">
+            <h2>🎯 Objective 1 - Risk Detection</h2>
+            <p style="margin-bottom: 1.5rem; color: #6b5a7f;">
+                Tell us about your current well-being by answering a few questions. We'll analyze your responses to estimate your risk profile.
+            </p>
+
+            <form id="riskForm" class="form-grid">
+               <!-- Hidden demographic fields from logged-in user -->
+        <input type="hidden" name="gender" value="{{ profile.gender }}">
+        <input type="hidden" name="age" value="{{ profile.age }}">
+        <input type="hidden" name="profession" value="{{ profile.profession }}">
+            <!-- Academic Pressure -->
+            <div class="form-group">
+                <label>Academic Pressure <span class="range-display" id="pressure-value">5/10</span></label>
+                <input type="range" name="academic_pressure" min="1" max="10" step="1" value="5">
+            </div>
+
+            <!-- CGPA -->
+            <div class="form-group">
+                <label>CGPA (GPA) <span class="range-display" id="cgpa-value">7.0/10</span></label>
+                <input type="range" name="cgpa" min="0" max="10" step="0.1" value="7">
+            </div>
+
+            <!-- Study Satisfaction -->
+            <div class="form-group">
+                <label>Study Satisfaction <span class="range-display" id="satisfaction-value">6/10</span></label>
+                <input type="range" name="study_satisfaction" min="1" max="10" step="1" value="6">
+            </div>
+
+            <!-- Sleep Duration -->
+            <div class="form-group">
+                <label>Sleep Duration</label>
+                <div class="custom-select" data-name="sleep_duration">
+                <input type="hidden" name="sleep_duration" required>
+                <button type="button" class="custom-select__toggle">Select Sleep Duration</button>
+                <div class="custom-select__options">
+                    <div class="custom-select__option" data-value="1">Less than 5 hours</div>
+                    <div class="custom-select__option" data-value="2">5–6 hours</div>
+                    <div class="custom-select__option" data-value="3">7–8 hours</div>
+                    <div class="custom-select__option" data-value="4">More than 8 hours</div>
+                </div>
+                </div>
+            </div>
+
+            <!-- Dietary Habits -->
+            <div class="form-group">
+                <label>Dietary Habits</label>
+                <div class="custom-select" data-name="dietary_habits">
+                <input type="hidden" name="dietary_habits" required>
+                <button type="button" class="custom-select__toggle">Select Dietary Habits</button>
+                <div class="custom-select__options">
+                    <div class="custom-select__option" data-value="1">Unhealthy</div>
+                    <div class="custom-select__option" data-value="2">Moderate</div>
+                    <div class="custom-select__option" data-value="3">Healthy</div>
+                </div>
+                </div>
+            </div>
+
+            <!-- Degree -->
+            <div class="form-group">
+                <label>Degree / Program</label>
+                <div class="custom-select" data-name="degree">
+                <input type="hidden" name="degree" required>
+                <button type="button" class="custom-select__toggle">Select Degree</button>
+                <div class="custom-select__options">
+                    <div class="custom-select__option" data-value="0">Class 12</div>
+                    <div class="custom-select__option" data-value="1">B.Arch</div>
+                    <div class="custom-select__option" data-value="2">B.Com</div>
+                    <div class="custom-select__option" data-value="3">B.Ed</div>
+                    <div class="custom-select__option" data-value="4">B.Pharm</div>
+                    <div class="custom-select__option" data-value="5">B.Tech</div>
+                    <div class="custom-select__option" data-value="6">BA</div>
+                    <div class="custom-select__option" data-value="7">BBA</div>
+                    <div class="custom-select__option" data-value="8">BCA</div>
+                    <div class="custom-select__option" data-value="9">BE</div>
+                    <div class="custom-select__option" data-value="10">BHM</div>
+                    <div class="custom-select__option" data-value="11">BSc</div>
+                    <div class="custom-select__option" data-value="12">LLB</div>
+                    <div class="custom-select__option" data-value="13">LLM</div>
+                    <div class="custom-select__option" data-value="14">M.Com</div>
+                    <div class="custom-select__option" data-value="15">M.Ed</div>
+                    <div class="custom-select__option" data-value="16">M.Pharm</div>
+                    <div class="custom-select__option" data-value="17">M.Tech</div>
+                    <div class="custom-select__option" data-value="18">MA</div>
+                    <div class="custom-select__option" data-value="19">MBA</div>
+                    <div class="custom-select__option" data-value="20">MBBS</div>
+                    <div class="custom-select__option" data-value="21">MCA</div>
+                    <div class="custom-select__option" data-value="22">MD</div>
+                    <div class="custom-select__option" data-value="23">ME</div>
+                    <div class="custom-select__option" data-value="24">MHM</div>
+                    <div class="custom-select__option" data-value="25">MSc</div>
+                    <div class="custom-select__option" data-value="26">Others</div>
+                    <div class="custom-select__option" data-value="27">PhD</div>
+                </div>
+                </div>
+            </div>
+
+            <!-- Work/Study Hours -->
+            <div class="form-group">
+                <label>Work/Study Hours per Day <span class="range-display" id="hours-value">6.0h</span></label>
+                <input type="range" name="work_hours" min="0" max="16" step="0.5" value="6">
+            </div>
+
+            <!-- Financial Stress -->
+            <div class="form-group">
+                <label>Financial Stress Level <span class="range-display" id="stress-value">2/3</span></label>
+                <input type="range" name="financial_stress" min="1" max="3" step="1" value="2">
+            </div>
+
+            <!-- Family History -->
+            <div class="form-group">
+                <label>Family History of Mental Illness</label>
+                <div class="custom-select" data-name="family_history">
+                <input type="hidden" name="family_history" required>
+                <button type="button" class="custom-select__toggle">Select</button>
+                <div class="custom-select__options">
+                    <div class="custom-select__option" data-value="0">No</div>
+                    <div class="custom-select__option" data-value="1">Yes</div>
+                </div>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit">Analyze My Risk</button>
+            </div>
+            </form>
+
+            <!-- Risk Result -->
+            <div id="riskResult" class="result-box">
+                <h3>🔍 Your Risk Analysis</h3>
+                <div class="result-item">
+                    <span class="result-label">Risk Level:</span>
+                    <span id="riskLevel" class="risk-badge risk-medium">Loading...</span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">Severity Score:</span>
+                    <span class="result-value" id="severityScore">--</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Objective 2: Severity Gauge -->
+        <section class="section">
+            <h2>📊 Objective 2 - Severity Score Gauge</h2>
+            <div class="gauge-container">
+                <div class="gauge">
+                    <div id="gaugeNeedle" class="gauge-needle"></div>
+                </div>
+                <div class="gauge-label">
+                    <div class="gauge-value" id="gaugeValue">--</div>
+                    <p>Your Well-Being Severity Score</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Objective 3: Student Profile / Cluster -->
+        <section class="section">
+            <h2>👤 Objective 3 - Your Profile Cluster</h2>
+            <p style="margin-bottom: 1.5rem; color: #6b5a7f;">
+                Based on your profile, we'll identify which student cluster you belong to and connect you with similar peers.
+            </p>
+
+            <button id="clusterBtn" class="btn btn-primary">Get My Profile</button>
+
+            <div id="clusterResult" class="result-box">
+                <h3>📍 Your Cluster Profile</h3>
+                <div class="result-item">
+                    <span class="result-label">Cluster Number:</span>
+                    <span class="result-value" id="clusterNumber">--</span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">Profile Name:</span>
+                    <span class="result-value" id="profileName">--</span>
+                </div>
+                <div class="result-item">
+                    <span class="result-label">Description:</span>
+                    <span id="profileDesc" style="color: #6b5a7f;">--</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Objective 4: Recommended Actions -->
+        <section class="section">
+            <h2>💡 Objective 4 - Recommended Actions</h2>
+            <p style="margin-bottom: 1.5rem; color: #6b5a7f;">
+                Get personalized action items based on your risk profile and well-being factors.
+            </p>
+
+            <div id="recommendationBox" class="result-box">
+                <h3>🎯 Your Personalized Recommendations</h3>
+                                <div id="recommendationContent" class="empty-state">
+                    <p>Submit your risk analysis above to receive personalized recommendations.</p>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        // ----------- CUSTOM SELECT (for sleep_duration, dietary_habits, degree, family_history) -----------
+        document.querySelectorAll('.custom-select').forEach(select => {
+            const hiddenInput = select.querySelector('input[type="hidden"]');
+            const toggleBtn = select.querySelector('.custom-select__toggle');
+            const optionsBox = select.querySelector('.custom-select__options');
+
+            if (!hiddenInput || !toggleBtn || !optionsBox) return;
+
+            toggleBtn.addEventListener('click', () => {
+                select.classList.toggle('open');
+            });
+
+            optionsBox.querySelectorAll('.custom-select__option').forEach(opt => {
+                opt.addEventListener('click', () => {
+                    const value = opt.getAttribute('data-value');
+                    const text = opt.textContent.trim();
+                    hiddenInput.value = value;
+                    toggleBtn.textContent = text;
+                    select.classList.remove('open');
+                    select.classList.remove('invalid');
+                });
+            });
+
+            // Close when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!select.contains(e.target)) {
+                    select.classList.remove('open');
+                }
+            });
+        });
+
+        // ----------- RANGE DISPLAY (for Academic Pressure, CGPA, etc.) -----------
+        function setupRangeDisplay(inputName, labelId, formatFn) {
+            const input = document.querySelector(`input[name="${inputName}"]`);
+            const label = document.getElementById(labelId);
+            if (!input || !label) return;
+
+            function update() {
+                const v = parseFloat(input.value);
+                label.textContent = formatFn(v);
+            }
+            input.addEventListener('input', update);
+            update(); // init
+        }
+
+        // connect each slider to its label
+        setupRangeDisplay('academic_pressure', 'pressure-value', v => `${v}/10`);
+        setupRangeDisplay('cgpa', 'cgpa-value', v => `${v.toFixed(1)}/10`);
+        setupRangeDisplay('study_satisfaction', 'satisfaction-value', v => `${v}/10`);
+        setupRangeDisplay('work_hours', 'hours-value', v => `${v.toFixed(1)}h`);
+        setupRangeDisplay('financial_stress', 'stress-value', v => `${v}/3`);
+
+        // ----------- RISK ANALYSIS (Objective 1 + gauge + recommendations) -----------
+        const riskForm = document.getElementById('riskForm');
+
+        if (riskForm) {
+            riskForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                const formData = new FormData(riskForm);
+
+                // Build payload from fields
+                const payload = {
+                    // These 3 may exist (student.html) or not (predict.html) – both cases are OK
+                    gender: formData.get('gender') || null,
+                    age: formData.get('age') ? parseInt(formData.get('age'), 10) : null,
+                    profession: formData.get('profession') || null,
+
+                    academic_pressure: parseFloat(formData.get('academic_pressure')),
+                    cgpa: parseFloat(formData.get('cgpa')),
+                    study_satisfaction: parseFloat(formData.get('study_satisfaction')),
+                    sleep_duration: parseFloat(formData.get('sleep_duration')),
+                    dietary_habits: parseFloat(formData.get('dietary_habits')),
+                    degree: parseFloat(formData.get('degree')),
+                    work_hours: parseFloat(formData.get('work_hours')),
+                    financial_stress: parseFloat(formData.get('financial_stress')),
+                    family_history: parseFloat(formData.get('family_history')),
+                };
+
+                console.log('Submitting risk analysis:', payload);
+
+                try {
+                    const response = await fetch('/api/predict', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) throw new Error('API Error');
+                    const data = await response.json();
+
+                    // Elements to update
+                    const riskResult    = document.getElementById('riskResult');
+                    const riskLevel     = document.getElementById('riskLevel');
+                    const severityScore = document.getElementById('severityScore');
+                    const gaugeValue    = document.getElementById('gaugeValue');
+                    const gaugeNeedle   = document.getElementById('gaugeNeedle');
+
+                    if (!riskResult || !riskLevel || !severityScore || !gaugeValue || !gaugeNeedle) {
+                        console.warn('Some result elements are missing in the page.');
+                        return;
+                    }
+
+                    const severity = data.severity_score || 0;
+                    severityScore.textContent = `${severity.toFixed(2)}%`;
+                    gaugeValue.textContent    = `${severity.toFixed(1)}%`;
+
+                    // risk badge
+                    let riskClass = 'risk-low';
+                    let riskText  = 'Low Risk';
+                    if (severity > 70) {
+                        riskClass = 'risk-high';
+                        riskText  = 'High Risk';
+                    } else if (severity > 40) {
+                        riskClass = 'risk-medium';
+                        riskText  = 'Medium Risk';
+                    }
+
+                    riskLevel.textContent = riskText;
+                    riskLevel.className   = `risk-badge ${riskClass}`;
+
+                    // gauge rotation (0–180° mapped to 0–100)
+                    const rotation = (severity / 100) * 180 - 90;
+                    gaugeNeedle.style.transform = `translateX(-50%) rotate(${rotation}deg)`;
+
+                    riskResult.classList.add('active');
+
+                    // show recommendations
+                    await displayRecommendations(payload, data);
+
+                } catch (err) {
+                    console.error(err);
+                    alert('Error analyzing risk. Please try again.');
+                }
+            });
+        }
+
+        // ----------- CLUSTER BUTTON (Objective 3) -----------
+        const clusterBtn = document.getElementById('clusterBtn');
+
+        if (clusterBtn && riskForm) {
+            clusterBtn.addEventListener('click', async () => {
+                const btn = clusterBtn;
+                btn.disabled = true;
+                btn.innerHTML = '<span class="loading"></span> Loading...';
+
+                const formData = new FormData(riskForm);
+                const payload = {
+                    // Optional user info (works for both pages)
+                    gender: formData.get('gender') || null,
+                    age: formData.get('age') ? parseInt(formData.get('age'), 10) : null,
+                    profession: formData.get('profession') || null,
+
+                    academic_pressure: parseFloat(formData.get('academic_pressure')) || 5,
+                    cgpa: parseFloat(formData.get('cgpa')) || 7,
+                    study_satisfaction: parseFloat(formData.get('study_satisfaction')) || 6,
+                    sleep_duration: parseFloat(formData.get('sleep_duration')) || 3,
+                    dietary_habits: parseFloat(formData.get('dietary_habits')) || 2,
+                    degree: parseFloat(formData.get('degree')) || 5,
+                    work_hours: parseFloat(formData.get('work_hours')) || 6,
+                    financial_stress: parseFloat(formData.get('financial_stress')) || 2,
+                    family_history: parseFloat(formData.get('family_history')) || 0,
+                };
+
+                try {
+                    const response = await fetch('/api/cluster', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) throw new Error('API Error');
+                    const data = await response.json();
+
+                    const clusterNumberEl = document.getElementById('clusterNumber');
+                    const profileNameEl   = document.getElementById('profileName');
+                    const profileDescEl   = document.getElementById('profileDesc');
+                    const clusterResultEl = document.getElementById('clusterResult');
+
+                    if (clusterNumberEl) clusterNumberEl.textContent = (data.cluster ?? '--');
+                    if (profileNameEl)   profileNameEl.textContent   = data.profile_name || '--';
+                    if (profileDescEl)   profileDescEl.textContent   = data.description || 'No description available';
+                    if (clusterResultEl) clusterResultEl.classList.add('active');
+
+                } catch (err) {
+                    console.error(err);
+                    alert('Error fetching cluster. Please try again.');
+                } finally {
+                    btn.disabled = false;
+                    btn.textContent = 'Get My Profile';
+                }
+            });
+        }
+
+        // ----------- RECOMMENDATIONS (Objective 4) -----------
+        async function displayRecommendations(riskData, riskResult) {
+            try {
+                const response = await fetch('/api/recommend', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        ...riskData,
+                        severity_score: riskResult.severity_score,
+                        model_label: riskResult.model_label
+                    })
+                });
+
+                if (!response.ok) throw new Error('API Error');
+                const data = await response.json();
+
+                const content = document.getElementById('recommendationContent');
+                const box = document.getElementById('recommendationBox');
+                if (!content || !box) return;
+
+                content.innerHTML = '';
+
+                if (data.recommendations && Array.isArray(data.recommendations)) {
+                    data.recommendations.forEach(rec => {
+                        const div = document.createElement('div');
+                        div.style.cssText =
+                            'text-align:left;margin-bottom:1rem;padding:1rem;' +
+                            'background:white;border-radius:8px;border-left:4px solid #d8b4e8;';
+                        div.innerHTML = `<strong style="color:#9b6ba8;">${rec}</strong>`;
+                        content.appendChild(div);
+                    });
+                } else if (data.recommendation) {
+                    content.innerHTML = `<p>${data.recommendation}</p>`;
+                } else {
+                    content.innerHTML = '<p>No recommendations available.</p>';
+                }
+
+                box.classList.add('active');
+            } catch (err) {
+                console.error(err);
+            }
+        }
+    </script>
+
+</body>
+</html>

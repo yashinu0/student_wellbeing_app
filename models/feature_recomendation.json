@@ -1,0 +1,100 @@
+{
+  "version": "1.1",
+  "notes": {
+    "sleep_duration_encoding": {
+      "0": "Less than 5 hours",
+      "1": "5–6 hours",
+      "2": "7–8 hours",
+      "3": "More than 8 hours"
+    },
+    "applies_to": [
+      "Academic Pressure",
+      "Sleep Duration",
+      "Financial Stress",
+      "Study Satisfaction",
+      "Work/Study Hours"
+    ]
+  },
+  "default": "Maintien des bonnes habitudes",
+  "rules": [
+    {
+      "id": "stress_high_ap",
+      "feature": "Academic Pressure",
+      "operator": ">=",
+      "value": 7,
+      "recommendation": "Gestion du stress",
+      "priority": 90
+    },
+    {
+      "id": "stress_moderate_ap",
+      "feature": "Academic Pressure",
+      "operator": ">=",
+      "value": 6,
+      "recommendation": "Organisation du travail + pauses régulières",
+      "priority": 70
+    },
+
+    {
+      "id": "sleep_very_low",
+      "feature": "Sleep Duration",
+      "operator": "<=",
+      "value": 0,
+      "recommendation": "Amélioration du sommeil (priorité élevée)",
+      "priority": 95
+    },
+    {
+      "id": "sleep_low",
+      "feature": "Sleep Duration",
+      "operator": "==",
+      "value": 1,
+      "recommendation": "Amélioration du sommeil",
+      "priority": 80
+    },
+
+    {
+      "id": "financial_high",
+      "feature": "Financial Stress",
+      "operator": ">=",
+      "value": 3,
+      "recommendation": "Aide financière / accompagnement social",
+      "priority": 85
+    },
+    {
+      "id": "financial_moderate",
+      "feature": "Financial Stress",
+      "operator": ">=",
+      "value": 2.3,
+      "recommendation": "Conseils de gestion budgétaire + ressources campus",
+      "priority": 60
+    },
+
+    {
+      "id": "low_satisfaction",
+      "feature": "Study Satisfaction",
+      "operator": "<=",
+      "value": 5,
+      "recommendation": "Coaching académique / accompagnement motivationnel",
+      "priority": 75
+    },
+
+    {
+      "id": "overwork_high",
+      "feature": "Work/Study Hours",
+      "operator": ">=",
+      "value": 10,
+      "recommendation": "Réorganisation du temps + pauses + activité physique",
+      "priority": 70
+    }
+  ],
+
+  "optional_rules": [
+    {
+      "id": "depression_flag",
+      "feature": "Depression",
+      "operator": "==",
+      "value": 1,
+      "recommendation": "Soutien psychologique",
+      "priority": 100
+    }
+  ]
+}

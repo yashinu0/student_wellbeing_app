@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero hero-home">
+  <div class="hero-copy">
+    <p class="eyebrow">Student wellbeing</p>
+    <h1>Check your mood, get guidance, feel supported.</h1>
+    <p class="lede">We combine risk detection, profile clustering, and tailored recommendations to help you navigate stress and study life.</p>
+    <div class="cta-row">
+      <a class="button" href="{{ url_for('predict') }}">Start assessment</a>
+      <span class="pill">{{ 'Models loaded' if not load_error else 'Models unavailable' }}</span>
+    </div>
+  </div>
+  <div class="hero-card">
+    <div class="hero-metrics">
+      <div>
+        <p class="eyebrow">Objective 1</p>
+        <h4>Detect risk</h4>
+        <p class="muted">XGBoost classifier to flag at-risk students.</p>
+      </div>
+      <div>
+        <p class="eyebrow">Objective 2</p>
+        <h4>Segment profiles</h4>
+        <p class="muted">KMeans clustering on stress, sleep, finance, satisfaction.</p>
+      </div>
+      <div>
+        <p class="eyebrow">Objective 3</p>
+        <h4>Recommend actions</h4>
+        <p class="muted">Cluster-based recommendations (fixed JSON).</p>
+      </div>
+      <div>
+        <p class="eyebrow">Objective 4</p>
+        <h4>Severity score</h4>
+        <p class="muted">Continuous risk score from the RF regressor.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="card feature-grid">
+  <div>
+    <h3>Why it matters</h3>
+    <p class="muted">Early signals of stress and depression often go unnoticed. A quick self-check can guide you to the right resources.</p>
+  </div>
+  <div class="feature-row">
+    <div class="feature">
+      <p class="eyebrow">Fast</p>
+      <h4>One-minute form</h4>
+      <p class="muted">Only essentials: demographics, study pressure, sleep, finance.</p>
+    </div>
+    <div class="feature">
+      <p class="eyebrow">Actionable</p>
+      <h4>Tailored advice</h4>
+      <p class="muted">Recommendations mapped directly from your cluster profile.</p>
+    </div>
+    <div class="feature">
+      <p class="eyebrow">Transparent</p>
+      <h4>Clear outputs</h4>
+      <p class="muted">Risk label, probability, severity score, and cluster.</p>
+    </div>
+  </div>
+  <div class="cta-row center">
+    <a class="button" href="{{ url_for('predict') }}">Start assessment</a>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,90 @@
+# Features utilisées pour l'anomaly detection (niveau admin)
+features_anomaly = [
+    "avg_academic_pressure",
+    "avg_sleep_duration",
+    "avg_financial_stress",
+    "avg_study_satisfaction",
+    "depression_rate",
+    "high_risk_ratio",
+    "avg_severity_score",
+    "cluster_high_stress_ratio",
+    "cluster_stable_ratio"
+]
+
+X_admin = df_admin[features_anomaly].copy()
+
+# Label synthétique (UNIQUEMENT pour l’évaluation)
+y_synth = None
+if "is_synthetic_anomaly" in df_admin.columns:
+    y_synth = df_admin["is_synthetic_anomaly"].astype(int).values
+    print("✅ is_synthetic_anomaly trouvé -> utilisé seulement pour évaluation")
+else:
+    print("⚠️ Pas de colonne is_synthetic_anomaly -> évaluation sans ground truth")
+
+
+from scipy.stats import zscore
+
+# Z-scores absolus par feature
+Z = np.abs(zscore(X_admin))
+
+# Score global par ligne: max des z-scores
+df_admin["zscore_max"] = Z.max(axis=1)
+
+# Seuil classique (3 sigma)
+z_threshold = 3.0
+df_admin["zscore_anomaly"] = (df_admin["zscore_max"] > z_threshold).astype(int)
+
+print(df_admin["zscore_anomaly"].value_counts(normalize=True))
+
+
+from sklearn.ensemble import IsolationForest
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import Pipeline
+
+pipe_iforest = Pipeline([
+    ("scaler", StandardScaler()),
+    ("model", IsolationForest(
+        n_estimators=300,
+        contamination=0.05,   # 5% anomalies attendues
+        random_state=42
+    ))
+])
+
+pipe_iforest.fit(X_admin)
+
+# Scores + prédictions
+df_admin["iforest_score"] = pipe_iforest.decision_function(X_admin)
+
+# predict: 1 = normal, -1 = anomalie
+df_admin["iforest_anomaly"] = pipe_iforest.predict(X_admin)
+df_admin["iforest_anomaly"] = df_admin["iforest_anomaly"].map({1: 0, -1: 1})
+
+print(df_admin["iforest_anomaly"].value_counts(normalize=True))
+
+
+from sklearn.metrics import precision_score, recall_score, f1_score
+
+if y_synth is not None:
+    z_pred = df_admin["zscore_anomaly"].values
+    i_pred = df_admin["iforest_anomaly"].values
+
+    print("=== Evaluation sur anomalies synthétiques (validation expérimentale) ===")
+
+    print("\nZ-score:")
+    print("Precision:", precision_score(y_synth, z_pred))
+    print("Recall   :", recall_score(y_synth, z_pred))
+    print("F1-score :", f1_score(y_synth, z_pred))
+
+    print("\nIsolation Forest:")
+    print("Precision:", precision_score(y_synth, i_pred))
+    print("Recall   :", recall_score(y_synth, i_pred))
+    print("F1-score :", f1_score(y_synth, i_pred))
+
+
+import joblib
+import os
+
+os.makedirs("models", exist_ok=True)
+joblib.dump(pipe_iforest, "models/anomaly_detector.pkl")
+
+print("✅ Modèle final sauvegardé : models/anomaly_detector.pkl")

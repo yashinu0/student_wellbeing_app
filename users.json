@@ -1,0 +1,64 @@
+{
+    "users": [
+        {
+            "first_name": "Lina",
+            "last_name": "Mhiri",
+            "dob": "2004-10-14",
+            "role": "other",
+            "gender": "female",
+            "profession": "student",
+            "email": "lina.mhiri@esprit.tn",
+            "password": "scrypt:32768:8:1$tBbbhRxdVevkAgk9$a65537c31e3f39ab2984c2be48b1b4b08cb860d52de3f14d5c834c91356b4dd1e54a760064968209befc3310446d20a4cd3ce3f4604947100f7ebe0fb0758cbe"
+        },
+        {
+            "first_name": "Yassine",
+            "last_name": "Kodia",
+            "dob": "2002-09-05",
+            "role": "scientist",
+            "gender": "male",
+            "profession": "employee",
+            "email": "yassine@gmail.com",
+            "password": "scrypt:32768:8:1$tBbbhRxdVevkAgk9$a65537c31e3f39ab2984c2be48b1b4b08cb860d52de3f14d5c834c91356b4dd1e54a760064968209befc3310446d20a4cd3ce3f4604947100f7ebe0fb0758cbe"
+        },
+        {
+            "first_name": "Aziz",
+            "last_name": "Zouari",
+            "dob": "2002-01-01",
+            "role": "admin",
+            "gender": "male",
+            "profession": "employee",
+            "email": "aziz@gmail.com",
+            "password": "scrypt:32768:8:1$tBbbhRxdVevkAgk9$a65537c31e3f39ab2984c2be48b1b4b08cb860d52de3f14d5c834c91356b4dd1e54a760064968209befc3310446d20a4cd3ce3f4604947100f7ebe0fb0758cbe"
+        },
+        {
+            "first_name": "Zeineb",
+            "last_name": "Nsiri",
+            "dob": "2002-01-01",
+            "role": "other",
+            "gender": "male",
+            "profession": "employee",
+            "email": "zeineb@gmail.com",
+            "password": "scrypt:32768:8:1$tBbbhRxdVevkAgk9$a65537c31e3f39ab2984c2be48b1b4b08cb860d52de3f14d5c834c91356b4dd1e54a760064968209befc3310446d20a4cd3ce3f4604947100f7ebe0fb0758cbe"
+        },
+        {
+            "first_name": "Issam",
+            "last_name": "Safi",
+            "dob": "2002-01-01",
+            "role": "other",
+            "gender": "male",
+            "profession": "employee",
+            "email": "issam@gmail.com",
+            "password": "scrypt:32768:8:1$tBbbhRxdVevkAgk9$a65537c31e3f39ab2984c2be48b1b4b08cb860d52de3f14d5c834c91356b4dd1e54a760064968209befc3310446d20a4cd3ce3f4604947100f7ebe0fb0758cbe"
+        },
+        {
+            "first_name": "Maryem",
+            "last_name": "Lamine",
+            "dob": "2002-01-01",
+            "role": "other",
+            "gender": "male",
+            "profession": "employee",
+            "email": "maryem@gmail.com",
+            "password": "scrypt:32768:8:1$tBbbhRxdVevkAgk9$a65537c31e3f39ab2984c2be48b1b4b08cb860d52de3f14d5c834c91356b4dd1e54a760064968209befc3310446d20a4cd3ce3f4604947100f7ebe0fb0758cbe"
+        }
+    ]
+}

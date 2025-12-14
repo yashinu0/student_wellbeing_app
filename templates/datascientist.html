@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Data Scientist Dashboard - Well-Being Analytics</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body class="page-datascientist">
+  <!-- Navigation -->
+  <nav>
+    <div class="logo">📊 Well-Being Analytics</div>
+    {% set role = session.get('user_role') %}
+    <ul>
+      <li><a href="/">Home</a></li>
+      {% if role == 'admin' %}
+        <li><a href="/admin">Admin</a></li>
+      {% elif role == 'scientist' %}
+        <li><a href="/datascientist">Data Scientist</a></li>
+      {% elif role in ('student','other') %}
+        <li><a href="/student">Student Portal</a></li>
+      {% else %}
+        <li><a href="/student">Student Portal</a></li>
+        <li><a href="/datascientist">Data Scientist</a></li>
+      {% endif %}
+    </ul>
+  </nav>
+
+  <div class="container">
+    <h1>🔬 Data Scientist Dashboard</h1>
+    <p class="page-subtitle">Model performance metrics, clustering analysis, recommendation logic, and anomaly monitoring</p>
+
+    <!-- Objective 1: Classification -->
+    <div class="section">
+      <h2 class="section-title">🎯 Objective 1 - Depression Classification</h2>
+      <div class="dashboard-grid">
+
+        <div class="card">
+          <h2>📊 Model Metrics</h2>
+
+          <div style="display:flex; gap:10px; align-items:center; margin-bottom:12px;">
+            <label style="color:#6b5a7f; font-weight:600;">Model:</label>
+            <select id="clfModelSelect" style="padding:10px; border-radius:10px; border:1px solid #e9d7f2; background:#fff; width:100%;">
+              <option value="">-- Load metrics first --</option>
+            </select>
+          </div>
+
+          <div class="metrics-grid">
+            <div class="metric">
+              <div class="metric-label">Accuracy</div>
+              <div class="metric-value" id="accuracy">--</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">Recall</div>
+              <div class="metric-value" id="recall">--</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">F1 Score</div>
+              <div class="metric-value" id="f1Score">--</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">Precision</div>
+              <div class="metric-value" id="precision">--</div>
+            </div>
+          </div>
+
+          <div style="margin-top:10px; color:#6b5a7f;">
+            <strong>ROC AUC:</strong> <span id="rocAuc">--</span>
+          </div>
+
+          <button class="btn" style="margin-top:12px;" onclick="loadClassificationMetrics()">Load Metrics</button>
+        </div>
+
+        <div class="card card-full">
+          <h2>🔲 Confusion Matrix</h2>
+          <div id="confusionMatrix" style="margin-top: 1rem;">
+            <div class="placeholder">
+              Confusion Matrix Visualization<br>
+              <small>Click "Load Metrics" to display</small>
+            </div>
+          </div>
+        </div>
+
+        <div class="card card-full">
+          <h2>📈 ROC AUC (All Models)</h2>
+          <div style="margin-top: 1rem;">
+            <canvas id="aucChart" height="120"></canvas>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Objective 2: Clustering -->
+    <div class="section">
+      <h2 class="section-title">👥 Objective 2 - Student Segmentation (Clustering)</h2>
+      <div class="dashboard-grid">
+
+        <div class="card card-full">
+          <h2>📊 Clustering Internal Metrics</h2>
+          <p style="margin-bottom: 1.0rem; color: #6b5a7f;">
+            Internal validation scores exported from the notebook for each clustering algorithm.
+          </p>
+          <div style="margin-top: 1rem;">
+            <canvas id="clusterMetricsChart" height="120"></canvas>
+          </div>
+          <button class="btn" style="margin-top: 1rem;" onclick="loadClusteringMetrics()">Load Clustering Metrics</button>
+        </div>
+
+        <div class="card card-full">
+          <h2>🧾 Summary</h2>
+          <div id="clusteringSummaryBox" class="placeholder" style="text-align:left;">
+            Click "Load Clustering Metrics" to display silhouette / CH / DB and number of clusters.
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Objective 3: Recommendation Engine -->
+    <div class="section">
+      <h2 class="section-title">💡 Objective 3 - Recommendation Logic</h2>
+      <div class="dashboard-grid">
+        <div class="card card-full">
+          <h2>⚙️ How Recommendations Work</h2>
+          <p style="margin-bottom: 1rem; color: #6b5a7f;">
+            The deployed system combines:
+          </p>
+          <ul style="color:#6b5a7f; line-height:1.8; margin-left:1.2rem;">
+            <li><strong>Cluster-based recommendations</strong> (KMeans cluster_id → predefined actions).</li>
+            <li><strong>Feature-rule recommendations</strong> (rule-based triggers from <code>feature_recomendation.json</code>).</li>
+          </ul>
+
+          <div class="table-wrapper" style="margin-top: 1rem;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Source</th>
+                  <th>Input</th>
+                  <th>Output</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Cluster-based</td>
+                  <td>cluster_id</td>
+                  <td>cluster_recommendations.json</td>
+                </tr>
+                <tr>
+                  <td>Feature-based</td>
+                  <td>Academic Pressure, Sleep, Stress, Satisfaction...</td>
+                  <td>feature_recomendation.json rules</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p style="margin-top: 1rem; color: #6b5a7f;">
+            
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Objective 4: Severity Regression -->
+    <div class="section">
+      <h2 class="section-title">📈 Objective 4 - Severity Score Prediction (Regression)</h2>
+      <div class="dashboard-grid">
+
+        <div class="card">
+          <h2>📊 Regression Metrics</h2>
+
+          <div style="display:flex; gap:10px; align-items:center; margin-bottom:12px;">
+            <label style="color:#6b5a7f; font-weight:600;">Model:</label>
+            <select id="regModelSelect" style="padding:10px; border-radius:10px; border:1px solid #e9d7f2; background:#fff; width:100%;">
+              <option value="">-- Load metrics first --</option>
+            </select>
+          </div>
+
+          <div class="metrics-grid">
+            <div class="metric">
+              <div class="metric-label">R²</div>
+              <div class="metric-value" id="r2Score">--</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">RMSE</div>
+              <div class="metric-value" id="rmse">--</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">MAE</div>
+              <div class="metric-value" id="mae">--</div>
+            </div>
+          </div>
+
+          <button class="btn" style="margin-top:12px;" onclick="loadRegressionMetrics()">Load Metrics</button>
+        </div>
+
+        <div class="card card-full">
+          <h2>🧠 Notes</h2>
+          <div class="placeholder" style="text-align:left;">
+            In the notebook, severity is modeled as a continuous probability-like rate (0..1).
+            In the app, it’s displayed as percentage (0..100) for user readability.
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Objective 5: Anomaly Detection -->
+    <div class="section">
+      <h2 class="section-title">🚨 Objective 5 - Temporal Monitoring & Anomaly Detection</h2>
+      <div class="dashboard-grid">
+
+        <div class="card card-full">
+          <h2>📌 Experimental Validation (Synthetic Anomalies)</h2>
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Method</th>
+                  <th>Precision</th>
+                  <th>Recall</th>
+                  <th>F1</th>
+                </tr>
+              </thead>
+              <tbody id="anomalyTable">
+                <tr>
+                  <td colspan="4" style="text-align:center; color:#9b6ba8;">
+                    <em>Click button below to load anomaly metrics</em>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <button class="btn" style="margin-top:1rem;" onclick="loadAnomalyMetrics()">Load Anomaly Metrics</button>
+
+          <p style="margin-top: 1rem; color: #6b5a7f;">
+            Monthly aggregates are computed from <code>submissions.csv</code> and then scored using the trained Isolation Forest pipeline.
+            The admin triggers anomaly computation via <code>/admin/anomaly</code>.
+          </p>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // Chart instances (avoid duplication)
+    let aucChartInstance = null;
+    let clusterMetricsChartInstance = null;
+
+    function renderConfusionMatrix(cm) {
+      // cm expected [[TN, FP],[FN, TP]]
+      const [r0, r1] = cm;
+      return `
+        <div class="table-wrapper" style="margin-top:10px;">
+          <table>
+            <thead>
+              <tr>
+                <th></th>
+                <th>Pred 0</th>
+                <th>Pred 1</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th>True 0</th>
+                <td>${r0[0]}</td>
+                <td>${r0[1]}</td>
+              </tr>
+              <tr>
+                <th>True 1</th>
+                <td>${r1[0]}</td>
+                <td>${r1[1]}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    // ---------------------------
+    // Objective 1 - Classification
+    // ---------------------------
+    async function loadClassificationMetrics() {
+      try {
+        const response = await fetch('/api/metrics/classification');
+        if (!response.ok) throw new Error('API error');
+        const payload = await response.json();
+
+        if (!payload.success) throw new Error(payload.error || 'Unknown error');
+        const data = payload.data; // IMPORTANT: your API returns {success, data}
+
+        const modelNames = Object.keys(data);
+        const select = document.getElementById('clfModelSelect');
+        select.innerHTML = modelNames.map(m => `<option value="${m}">${m}</option>`).join('');
+
+        select.onchange = () => fillClfMetrics(data[select.value]);
+
+        // Default to first model
+        select.value = modelNames[0];
+        fillClfMetrics(data[modelNames[0]]);
+
+        // Build AUC chart across all models that have roc_auc
+        const aucModels = [];
+        const aucValues = [];
+        modelNames.forEach(m => {
+          if (data[m].roc_auc !== undefined && data[m].roc_auc !== null) {
+            aucModels.push(m);
+            aucValues.push(Number(data[m].roc_auc));
+          }
+        });
+
+        const ctx = document.getElementById("aucChart");
+        if (aucChartInstance) aucChartInstance.destroy();
+
+        aucChartInstance = new Chart(ctx, {
+          type: "bar",
+          data: {
+            labels: aucModels,
+            datasets: [{ label: "ROC AUC", data: aucValues }]
+          },
+          options: {
+            responsive: true,
+            plugins: { legend: { position: "bottom" } },
+            scales: { y: { min: 0, max: 1 } }
+          }
+        });
+
+      } catch (error) {
+        console.error(error);
+        alert('Error loading classification metrics. Make sure artifacts/metrics/classification.json exists.');
+      }
+    }
+
+    function fillClfMetrics(m) {
+      document.getElementById('accuracy').textContent = (Number(m.accuracy) * 100).toFixed(1) + '%';
+      document.getElementById('recall').textContent = (Number(m.recall) * 100).toFixed(1) + '%';
+      document.getElementById('f1Score').textContent = Number(m.f1_score).toFixed(3);
+      document.getElementById('precision').textContent = (Number(m.precision) * 100).toFixed(1) + '%';
+
+      document.getElementById('rocAuc').textContent =
+        (m.roc_auc !== undefined && m.roc_auc !== null) ? Number(m.roc_auc).toFixed(3) : "--";
+
+      const cmDiv = document.getElementById('confusionMatrix');
+      if (m.confusion_matrix) {
+        cmDiv.innerHTML = renderConfusionMatrix(m.confusion_matrix);
+      } else {
+        cmDiv.innerHTML = `<div class="placeholder">No confusion matrix available.</div>`;
+      }
+    }
+
+    // ---------------------------
+    // Objective 2 - Clustering
+    // ---------------------------
+    async function loadClusteringMetrics() {
+      try {
+        const response = await fetch('/api/metrics/clustering');
+        if (!response.ok) throw new Error('API error');
+        const payload = await response.json();
+
+        if (!payload.success) throw new Error(payload.error || 'Unknown error');
+        const data = payload.data; // {KMeans:{...}, DBSCAN:{...}, CAH:{...}}
+
+        const names = Object.keys(data);
+        const silhouette = names.map(n => data[n].silhouette ?? null);
+        const ch = names.map(n => data[n].calinski_harabasz ?? null);
+        const db = names.map(n => data[n].davies_bouldin ?? null);
+
+        const ctx = document.getElementById("clusterMetricsChart");
+        if (clusterMetricsChartInstance) clusterMetricsChartInstance.destroy();
+
+        clusterMetricsChartInstance = new Chart(ctx, {
+          type: "bar",
+          data: {
+            labels: names,
+            datasets: [
+              { label: "Silhouette", data: silhouette },
+              { label: "Calinski-Harabasz", data: ch },
+              { label: "Davies-Bouldin", data: db }
+            ]
+          },
+          options: {
+            responsive: true,
+            plugins: { legend: { position: "bottom" } }
+          }
+        });
+
+        // Summary box
+        const summaryBox = document.getElementById("clusteringSummaryBox");
+        let html = `<div style="text-align:left;">`;
+        names.forEach(n => {
+          const v = data[n];
+          html += `
+            <p style="margin:0 0 10px 0;">
+              <strong>${n}</strong><br>
+              silhouette: <b>${(v.silhouette ?? "--")}</b> |
+              CH: <b>${(v.calinski_harabasz ?? "--")}</b> |
+              DB: <b>${(v.davies_bouldin ?? "--")}</b> |
+              clusters: <b>${(v.n_clusters ?? "--")}</b>
+            </p>
+          `;
+        });
+        html += `</div>`;
+        summaryBox.outerHTML = `<div id="clusteringSummaryBox" class="placeholder" style="text-align:left;">${html}</div>`;
+
+      } catch (error) {
+        console.error(error);
+        alert('Error loading clustering metrics. Make sure artifacts/metrics/clustering.json exists.');
+      }
+    }
+
+    // ---------------------------
+    // Objective 4 - Regression
+    // ---------------------------
+    async function loadRegressionMetrics() {
+      try {
+        const response = await fetch('/api/metrics/regression');
+        if (!response.ok) throw new Error('API error');
+        const payload = await response.json();
+
+        if (!payload.success) throw new Error(payload.error || 'Unknown error');
+        const data = payload.data; // e.g. {"Random Forest": {...}, "Linear Regression": {...}}
+
+        const modelNames = Object.keys(data);
+        const select = document.getElementById("regModelSelect");
+        select.innerHTML = modelNames.map(m => `<option value="${m}">${m}</option>`).join('');
+
+        select.onchange = () => fillRegMetrics(data[select.value]);
+
+        select.value = modelNames[0];
+        fillRegMetrics(data[modelNames[0]]);
+
+      } catch (error) {
+        console.error(error);
+        alert('Error loading regression metrics. Make sure artifacts/metrics/regression.json exists.');
+      }
+    }
+
+    function fillRegMetrics(m) {
+      // accept either r2 or r2_score keys
+      const r2 = (m.r2 !== undefined) ? m.r2 : m.r2_score;
+      document.getElementById('r2Score').textContent = Number(r2).toFixed(3);
+      document.getElementById('rmse').textContent = Number(m.rmse).toFixed(3);
+      document.getElementById('mae').textContent = Number(m.mae).toFixed(3);
+    }
+
+    // ---------------------------
+    // Objective 5 - Anomaly
+    // ---------------------------
+    async function loadAnomalyMetrics() {
+      try {
+        const response = await fetch('/api/metrics/anomaly');
+        if (!response.ok) throw new Error('API error');
+        const payload = await response.json();
+
+        if (!payload.success) throw new Error(payload.error || 'Unknown error');
+        const data = payload.data; // {"ZScore": {...}, "IsolationForest": {...}}
+
+        const tbody = document.getElementById("anomalyTable");
+        tbody.innerHTML = "";
+
+        const rows = [
+          ["Z-Score", data.ZScore],
+          ["Isolation Forest", data.IsolationForest]
+        ];
+
+        rows.forEach(([name, v]) => {
+          if (!v) return;
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${name}</td>
+            <td>${Number(v.precision).toFixed(3)}</td>
+            <td>${Number(v.recall).toFixed(3)}</td>
+            <td>${Number(v.f1_score).toFixed(3)}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+
+        if (!tbody.children.length) {
+          tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;">No anomaly metrics available</td></tr>`;
+        }
+
+      } catch (error) {
+        console.error(error);
+        alert('Error loading anomaly metrics. Make sure artifacts/metrics/anomaly.json exists.');
+      }
+    }
+  </script>
+</body>
+</html>

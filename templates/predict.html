@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Assessment - Risk Analyzer</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head>
+<body class="page-predict">
+  <div class="container">
+    <header>
+      <p class="eyebrow">Assessment</p>
+      <h1>Student Assessment Form</h1>
+      <p class="lede">Provide your details for depression risk analysis. Values match our ML model encodings.</p>
+    </header>
+
+    <div class="card">
+      <form class="form-grid" id="assessmentForm" method="POST" action="/predict">
+        <!-- Gender -->
+        <div class="form-group">
+          <label for="gender">Gender</label>
+          <div class="custom-select" data-name="gender">
+            <input type="hidden" name="gender" required>
+            <button type="button" class="custom-select__toggle">Select Gender</button>
+            <div class="custom-select__options">
+              <div class="custom-select__option" data-value="0">Male</div>
+              <div class="custom-select__option" data-value="1">Female</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Age -->
+        <div class="form-group">
+          <label for="age">Age</label>
+          <input type="number" name="age" id="age" min="0" step="1" placeholder="Enter your age" required>
+        </div>
+
+        <!-- Profession -->
+        <div class="form-group">
+          <label>Profession</label>
+          <div class="custom-select" data-name="profession">
+            <input type="hidden" name="profession" required>
+            <button type="button" class="custom-select__toggle">Select Profession</button>
+            <div class="custom-select__options">
+              <div class="custom-select__option" data-value="0">Employee</div>
+              <div class="custom-select__option" data-value="1">Freelancer</div>
+              <div class="custom-select__option" data-value="2">Student</div>
+              <div class="custom-select__option" data-value="3">Unemployed</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Academic Pressure -->
+        <div class="form-group">
+          <label>Academic Pressure <span class="range-display" id="pressure-value">5/10</span></label>
+          <input type="range" name="academic_pressure" min="1" max="10" step="1" value="5">
+        </div>
+
+        <!-- CGPA -->
+        <div class="form-group">
+          <label>CGPA (GPA) <span class="range-display" id="cgpa-value">7.0/10</span></label>
+          <input type="range" name="cgpa" min="0" max="10" step="0.1" value="7">
+        </div>
+
+        <!-- Study Satisfaction -->
+        <div class="form-group">
+          <label>Study Satisfaction <span class="range-display" id="satisfaction-value">6/10</span></label>
+          <input type="range" name="study_satisfaction" min="1" max="10" step="1" value="6">
+        </div>
+
+        <!-- Sleep Duration -->
+        <div class="form-group">
+          <label>Sleep Duration</label>
+          <div class="custom-select" data-name="sleep_duration">
+            <input type="hidden" name="sleep_duration" required>
+            <button type="button" class="custom-select__toggle">Select Sleep Duration</button>
+            <div class="custom-select__options">
+              <div class="custom-select__option" data-value="1">Less than 5 hours</div>
+              <div class="custom-select__option" data-value="2">5-6 hours</div>
+              <div class="custom-select__option" data-value="3">7-8 hours</div>
+              <div class="custom-select__option" data-value="4">More than 8 hours</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dietary Habits -->
+        <div class="form-group">
+          <label>Dietary Habits</label>
+          <div class="custom-select" data-name="dietary_habits">
+            <input type="hidden" name="dietary_habits" required>
+            <button type="button" class="custom-select__toggle">Select Dietary Habits</button>
+            <div class="custom-select__options">
+              <div class="custom-select__option" data-value="1">Unhealthy</div>
+              <div class="custom-select__option" data-value="2">Moderate</div>
+              <div class="custom-select__option" data-value="3">Healthy</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Degree -->
+        <div class="form-group">
+          <label>Degree / Program</label>
+          <div class="custom-select" data-name="degree">
+            <input type="hidden" name="degree" required>
+            <button type="button" class="custom-select__toggle">Select Degree</button>
+            <div class="custom-select__options">
+              <div class="custom-select__option" data-value="0">Class 12</div>
+              <div class="custom-select__option" data-value="1">B.Arch</div>
+              <div class="custom-select__option" data-value="2">B.Com</div>
+              <div class="custom-select__option" data-value="3">B.Ed</div>
+              <div class="custom-select__option" data-value="4">B.Pharm</div>
+              <div class="custom-select__option" data-value="5">B.Tech</div>
+              <div class="custom-select__option" data-value="6">BA</div>
+              <div class="custom-select__option" data-value="7">BBA</div>
+              <div class="custom-select__option" data-value="8">BCA</div>
+              <div class="custom-select__option" data-value="9">BE</div>
+              <div class="custom-select__option" data-value="10">BHM</div>
+              <div class="custom-select__option" data-value="11">BSc</div>
+              <div class="custom-select__option" data-value="12">LLB</div>
+              <div class="custom-select__option" data-value="13">LLM</div>
+              <div class="custom-select__option" data-value="14">M.Com</div>
+              <div class="custom-select__option" data-value="15">M.Ed</div>
+              <div class="custom-select__option" data-value="16">M.Pharm</div>
+              <div class="custom-select__option" data-value="17">M.Tech</div>
+              <div class="custom-select__option" data-value="18">MA</div>
+              <div class="custom-select__option" data-value="19">MBA</div>
+              <div class="custom-select__option" data-value="20">MBBS</div>
+              <div class="custom-select__option" data-value="21">MCA</div>
+              <div class="custom-select__option" data-value="22">MD</div>
+              <div class="custom-select__option" data-value="23">ME</div>
+              <div class="custom-select__option" data-value="24">MHM</div>
+              <div class="custom-select__option" data-value="25">MSc</div>
+              <div class="custom-select__option" data-value="26">Others</div>
+              <div class="custom-select__option" data-value="27">PhD</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Work/Study Hours -->
+        <div class="form-group">
+          <label>Work/Study Hours per Day <span class="range-display" id="hours-value">6.0h</span></label>
+          <input type="range" name="work_hours" min="0" max="16" step="0.5" value="6">
+        </div>
+
+        <!-- Financial Stress -->
+        <div class="form-group">
+          <label>Financial Stress Level <span class="range-display" id="stress-value">2/3</span></label>
+          <input type="range" name="financial_stress" min="1" max="3" step="1" value="2">
+        </div>
+
+        <!-- Family History -->
+        <div class="form-group">
+          <label>Family History of Mental Illness</label>
+          <div class="custom-select" data-name="family_history">
+            <input type="hidden" name="family_history" required>
+            <button type="button" class="custom-select__toggle">Select</button>
+            <div class="custom-select__options">
+              <div class="custom-select__option" data-value="0">No</div>
+              <div class="custom-select__option" data-value="1">Yes</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Submit -->
+        <div class="form-actions">
+          <button type="submit">Analyze Risk</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Update range display values
+    document.querySelectorAll('input[type="range"]').forEach(range => {
+      range.addEventListener('input', function() {
+        const name = this.name;
+        let displayValue = this.value;
+
+        if (name === 'cgpa') {
+          displayValue = parseFloat(this.value).toFixed(1) + '/10';
+          document.getElementById('cgpa-value').textContent = displayValue;
+        } else if (name === 'academic_pressure') {
+          displayValue = this.value + '/10';
+          document.getElementById('pressure-value').textContent = displayValue;
+        } else if (name === 'study_satisfaction') {
+          displayValue = this.value + '/10';
+          document.getElementById('satisfaction-value').textContent = displayValue;
+        } else if (name === 'work_hours') {
+          displayValue = this.value + 'h';
+          document.getElementById('hours-value').textContent = displayValue;
+        } else if (name === 'financial_stress') {
+          displayValue = this.value + '/3';
+          document.getElementById('stress-value').textContent = displayValue;
+        }
+      });
+    });
+
+    // Custom select dropdown logic
+    document.addEventListener('click', (e) => {
+      document.querySelectorAll('.custom-select').forEach(sel => {
+        const toggle = sel.querySelector('.custom-select__toggle');
+        const opts = sel.querySelector('.custom-select__options');
+        if (toggle.contains(e.target)) {
+          sel.classList.toggle('open');
+        } else if (!opts.contains(e.target)) {
+          sel.classList.remove('open');
+        }
+      });
+    });
+
+    document.querySelectorAll('.custom-select__option').forEach(opt => {
+      opt.addEventListener('click', () => {
+        const sel = opt.closest('.custom-select');
+        const hidden = sel.querySelector('input[name]');
+        const toggle = sel.querySelector('.custom-select__toggle');
+        if (hidden) hidden.value = opt.dataset.value;
+        if (toggle) toggle.textContent = opt.textContent;
+        sel.classList.remove('open');
+      });
+    });
+
+    // Form validation
+    document.getElementById('assessmentForm').addEventListener('submit', (e) => {
+      let valid = true;
+      document.querySelectorAll('.custom-select').forEach(sel => {
+        const hidden = sel.querySelector('input[name]');
+        if (!hidden.value) {
+          valid = false;
+          sel.classList.add('invalid');
+        } else {
+          sel.classList.remove('invalid');
+        }
+      });
+      
+      if (!valid) {
+        e.preventDefault();
+        alert('Please complete all fields before submitting.');
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Portal - Well-Being Analytics</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      /* Inline boost for model cards to avoid cache issues */
+      .status-cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:0.75rem; }
+      .status-card { background:#fff; border:1px solid #eedcf6; border-radius:12px; padding:0.9rem; box-shadow:0 8px 24px rgba(0,0,0,0.05); display:flex; flex-direction:column; gap:0.5rem; }
+      .status-card-top { display:flex; align-items:flex-start; justify-content:space-between; gap:0.5rem; }
+      .status-card-bottom { display:flex; justify-content:space-between; gap:0.5rem; flex-wrap:wrap; }
+      .status-name { font-weight:700; color:#4b2c5e; font-size:15px; }
+      .status-path { font-size:12px; color:#7c6a8b; word-break:break-all; }
+      .status-time { font-size:12px; color:#6b5a7f; font-family:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace; }
+      .status-note { font-size:13px; color:#4b2c5e; }
+      .status-chip { display:inline-flex; align-items:center; justify-content:center; padding:4px 10px; border-radius:999px; font-size:12px; font-weight:600; }
+      .status-chip.ok { background:#dcfce7; color:#166534; }
+      .status-chip.failed { background:#fee2e2; color:#b91c1c; }
+      .status-chip.warning, .status-chip.missing { background:#fef9c3; color:#92400e; }
+      .skeleton { display:inline-block; height:10px; background:linear-gradient(90deg,#f3e9fb 0%,#e8d9f5 50%,#f3e9fb 100%); background-size:200% 100%; animation: shimmer 1.2s infinite; border-radius:999px; min-width:80px; }
+      .skeleton.wide { min-width:140px; }
+      @keyframes shimmer { 0%{background-position:200% 0;} 100%{background-position:-200% 0;} }
+      /* Inline boost for health cards */
+      .health-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px,1fr)); gap:1rem; }
+      .health-card { background:#fff; border:1px solid #eedcf6; border-radius:12px; padding:1rem; box-shadow:0 8px 24px rgba(0,0,0,0.05); display:flex; flex-direction:column; gap:0.35rem; }
+      .health-header { display:flex; align-items:center; gap:0.6rem; }
+      .health-icon { width:36px; height:36px; border-radius:10px; display:inline-flex; align-items:center; justify-content:center; background:#f3e9fb; color:#7c3aed; font-size:16px; }
+      .health-title { font-weight:700; color:#4b2c5e; }
+      .health-subtitle { font-size:12px; color:#7c6a8b; }
+      .health-badge { margin-left:auto; padding:4px 10px; border-radius:999px; font-size:12px; font-weight:600; background:#dcfce7; color:#166534; }
+      .health-badge.warning { background:#fef9c3; color:#92400e; }
+      .health-badge.error { background:#fee2e2; color:#b91c1c; }
+      .health-metric { font-size:28px; font-weight:700; color:#4b2c5e; }
+      .health-foot { font-size:13px; color:#6b5a7f; }
+      /* User cards */
+      .user-cards { display:grid; grid-template-columns:repeat(auto-fit, minmax(260px,1fr)); gap:0.75rem; }
+      .user-card { background:#fff; border:1px solid #eedcf6; border-radius:12px; padding:0.9rem; box-shadow:0 8px 24px rgba(0,0,0,0.05); display:flex; flex-direction:column; gap:0.35rem; }
+      .user-card-top { display:flex; align-items:flex-start; justify-content:space-between; gap:0.5rem; }
+      .user-name { font-weight:700; color:#4b2c5e; font-size:15px; }
+      .user-role { font-size:12px; color:#7c6a8b; }
+      .user-email { font-size:12px; color:#6b5a7f; font-family:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace; }
+      .user-meta { font-size:13px; color:#4b2c5e; }
+      /* Role cards */
+      .role-cards { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px,1fr)); gap:0.75rem; }
+      .role-card { background:#fff; border:1px solid #eedcf6; border-radius:12px; padding:0.9rem; box-shadow:0 8px 24px rgba(0,0,0,0.05); display:flex; flex-direction:column; gap:0.4rem; }
+      .role-top { display:flex; align-items:center; justify-content:space-between; }
+      .role-name { font-weight:700; color:#4b2c5e; font-size:15px; }
+      .role-badge { padding:4px 10px; border-radius:999px; font-size:12px; font-weight:600; background:#dcfce7; color:#166534; }
+      .role-badge.warning { background:#fef9c3; color:#92400e; }
+      .role-badge.danger { background:#fee2e2; color:#b91c1c; }
+      .role-desc { font-size:13px; color:#6b5a7f; }
+      .role-tags { display:flex; gap:0.4rem; flex-wrap:wrap; }
+      .tag { padding:4px 8px; border-radius:999px; background:#f3e9fb; color:#6b5a7f; font-size:12px; }
+    </style>
+</head>
+<body class="page-datascientist">
+    <nav>
+        <div class="logo">📊 Well-Being Analytics</div>
+        {% set role = session.get('user_role') %}
+        <ul>
+            <li><a href="/">Home</a></li>
+            <li><a class="active" href="/admin">Admin</a></li>
+            {% if not role %}
+                <li><a href="/student">Student Portal</a></li>
+                <li><a href="/datascientist">Data Scientist</a></li>
+            {% elif role == 'scientist' %}
+                <li><a href="/datascientist">Data Scientist</a></li>
+            {% elif role in ('student','other') %}
+                <li><a href="/student">Student Portal</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+
+    <div class="container">
+        <h1>🛠️ Admin Control Center</h1>
+        <p class="page-subtitle">Manage users, monitor system health, and oversee wellbeing dashboards.</p>
+
+        <div class="section">
+            <h2 class="section-title">User & Access</h2>
+            <div class="dashboard-grid dashboard-grid-full">
+                <div class="card card-full">
+                    <div class="card-header">
+                        <h2 class="card-title">User Directory</h2>
+                    </div>
+                    <div class="card-content">
+                        <p style="color:#6b5a7f; margin-bottom:1rem;">
+                            Snapshot of users from users.json (sanitized).
+                        </p>
+                        <div class="user-cards" id="userDirectory">
+                            <div class="user-card skeleton-card">
+                                <div class="skeleton" style="min-width:120px;"></div>
+                                <div class="skeleton wide"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card card-full">
+                    <h2>Role Management</h2>
+                    <p style="color:#6b5a7f; margin-bottom:1rem;">
+                        Quick view of who can access what. Future: toggles and granular policies.
+                    </p>
+                    <div class="role-cards">
+                        <div class="role-card">
+                            <div class="role-top">
+                                <div class="role-name">Admin</div>
+                                <span class="role-badge danger">Full</span>
+                            </div>
+                            <div class="role-desc">Access to admin portal, anomaly scan, exports, user directory.</div>
+                            <div class="role-tags">
+                                <span class="tag">Anomaly</span>
+                                <span class="tag">Exports</span>
+                                <span class="tag">Users</span>
+                            </div>
+                        </div>
+                        <div class="role-card">
+                            <div class="role-top">
+                                <div class="role-name">Scientist</div>
+                                <span class="role-badge warning">Scoped</span>
+                            </div>
+                            <div class="role-desc">Access to data scientist dashboard and model insights.</div>
+                            <div class="role-tags">
+                                <span class="tag">Models</span>
+                                <span class="tag">Clusters</span>
+                                <span class="tag">Metrics</span>
+                            </div>
+                        </div>
+                        <div class="role-card">
+                            <div class="role-top">
+                                <div class="role-name">Student / Other</div>
+                                <span class="role-badge ok">Limited</span>
+                            </div>
+                            <div class="role-desc">Can submit assessments and view personal results.</div>
+                            <div class="role-tags">
+                                <span class="tag">Assessment</span>
+                                <span class="tag">Results</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">System Overview</h2>
+            <div class="dashboard-grid">
+                <div class="card card-full">
+                    <div class="card-header">
+                        <h2 class="card-title">Platform Health</h2>
+                    </div>
+                    <div class="card-content">
+                        <p style="color:#6b5a7f; margin-bottom:1rem;">
+                            Track uptime, API latency, and recent errors.
+                        </p>
+                        <div class="health-grid">
+                            <div class="health-card">
+                                <div class="health-header">
+                                    <div class="health-icon">⏱️</div>
+                                    <div>
+                                        <div class="health-title">Uptime</div>
+                                        <div class="health-subtitle">Last 7 days</div>
+                                    </div>
+                                    <span class="health-badge ok">Operational</span>
+                                </div>
+                                <div class="health-metric">99.9%</div>
+                                <div class="health-foot">Last incident: --</div>
+                            </div>
+                            <div class="health-card">
+                                <div class="health-header">
+                                    <div class="health-icon">⚡</div>
+                                    <div>
+                                        <div class="health-title">API Latency</div>
+                                        <div class="health-subtitle">p95 (ms)</div>
+                                    </div>
+                                    <span class="health-badge warning">Monitoring</span>
+                                </div>
+                                <div class="health-metric">--</div>
+                                <div class="health-foot">Updated: --</div>
+                            </div>
+                            <div class="health-card">
+                                <div class="health-header">
+                                    <div class="health-icon">🚧</div>
+                                    <div>
+                                        <div class="health-title">Error Rate</div>
+                                        <div class="health-subtitle">24h</div>
+                                    </div>
+                                    <span class="health-badge ok">Low</span>
+                                </div>
+                                <div class="health-metric">--</div>
+                                <div class="health-foot">Last spike: --</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card card-full">
+                    <div class="card-header">
+                        <h2 class="card-title">Data Pipelines</h2>
+                    </div>
+                    <div class="card-content">
+                        <p style="color:#6b5a7f; margin-bottom:1rem;">
+                            Monitor ML artifacts, refresh cadence, and ingestion jobs.
+                        </p>
+                        <div class="status-cards" id="modelStatusBody">
+                            <div class="status-card skeleton-card">
+                                <div class="status-card-row">
+                                    <span class="skeleton"></span>
+                                    <span class="skeleton"></span>
+                                </div>
+                                <div class="status-card-row">
+                                    <span class="skeleton wide"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">Exports</h2>
+            <div class="dashboard-grid">
+                <div class="card card-full">
+                    <div class="card-header">
+                        <div class="card-icon recommendations"></div>
+                        <h2 class="card-title">Export Center</h2>
+                    </div>
+                    <div class="card-content">
+                        <p style="color:#6b5a7f; margin-bottom:1rem;">
+                            Download the latest submissions dataset for audits or analysis.
+                        </p>
+                        <div class="export-actions">
+                            <a class="btn btn-primary" href="/admin/export">Download submissions.csv</a>
+                            <div style="height: 20px;"></div>
+                            <div class="export-note">
+                                <strong>What you get</strong><br>
+                                Raw submissions with features, model outputs, clusters, and timestamps. Use it for deeper analysis or BI dashboards.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">Anomaly Detection</h2>
+            <div class="dashboard-grid">
+                <div class="card card-full">
+                    <h2>Monthly Anomaly Scan</h2>
+                    <p style="color:#6b5a7f; margin-bottom:1rem;">
+                        Detect unusual months using the Isolation Forest model trained offline.
+                    </p>
+                    <button class="btn" id="anomalyBtn">Run Anomaly Detection</button>
+                    <div id="anomalyStatus" style="margin-top:1rem; color:#9b6ba8;"></div>
+                    <div class="table-wrapper" style="margin-top:1rem;">
+                        <table>
+                            <thead id="anomalyHead">
+                                <tr><th>Year</th><th>Month</th><th>Flag</th><th>Score</th></tr>
+                            </thead>
+                            <tbody id="anomalyBody">
+                                <tr>
+                                    <td colspan="4" style="text-align:center; color:#9b6ba8;">
+                                        <em>Click "Run Anomaly Detection" to load results</em>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <h2 class="section-title" style="margin-top: 1rem;">Dashboards</h2>
+            <div class="dashboard-grid">
+                <div class="card card-full">
+                    <h2>Visual Insights</h2>
+                    <p style="color:#6b5a7f; margin-bottom:1rem;">Trends and ratios derived from the anomaly dataset.</p>
+                    <div class="chart-grid">
+                        <div class="chart-item">
+                            <h3>Anomaly Score by Month</h3>
+                            <canvas id="chartScores" height="160"></canvas>
+                        </div>
+                        <div class="chart-item">
+                            <h3>High-Stress vs Stable Clusters</h3>
+                            <canvas id="chartClusters" height="160"></canvas>
+                        </div>
+                        <div class="chart-item">
+                            <h3>Academic Pressure & Sleep</h3>
+                            <canvas id="chartPressureSleep" height="160"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const anomalyBtn = document.getElementById('anomalyBtn');
+        const anomalyStatus = document.getElementById('anomalyStatus');
+        const anomalyHead = document.getElementById('anomalyHead');
+        const anomalyBody = document.getElementById('anomalyBody');
+        const modelStatusBody = document.getElementById('modelStatusBody');
+        const userDirectory = document.getElementById('userDirectory');
+        let chartScores, chartClusters, chartPressureSleep;
+
+        async function runAnomaly() {
+            if (!anomalyBtn) return;
+            anomalyBtn.disabled = true;
+            anomalyBtn.textContent = 'Running...';
+            anomalyStatus.textContent = '';
+            anomalyBody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#9b6ba8;">Processing...</td></tr>';
+
+            try {
+                const res = await fetch('/admin/anomaly', { method: 'GET' });
+                const data = await res.json();
+                if (!res.ok || !data.success) {
+                    throw new Error(data.message || 'Anomaly detection failed');
+                }
+
+                const cols = data.columns || [];
+                const records = data.data || [];
+
+                if (cols.length) {
+                    anomalyHead.innerHTML = `<tr>${cols.map(c => `<th>${c}</th>`).join('')}</tr>`;
+                }
+
+                if (!records.length) {
+                    anomalyBody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#9b6ba8;">No data available</td></tr>';
+                } else {
+                    anomalyBody.innerHTML = '';
+                    records.forEach(row => {
+                        const flagVal = Number(row.anomaly_flag);
+                        const isAnomaly = flagVal && !Number.isNaN(flagVal) && flagVal > 0;
+                        const rowAttrs = isAnomaly ? ' class="anomaly-row" style="background:#fde8e8;"' : '';
+                        const cells = cols.map(col => {
+                            const cellVal = row[col] !== undefined ? row[col] : '';
+                            const cellStyle = isAnomaly ? ' style="background:#fde8e8;"' : '';
+                            return `<td${cellStyle}>${cellVal}</td>`;
+                        }).join('');
+                        anomalyBody.insertAdjacentHTML('beforeend', `<tr${rowAttrs}>${cells}</tr>`);
+                    });
+                }
+                anomalyStatus.textContent = 'Completed.';
+                updateCharts(records);
+            } catch (err) {
+                anomalyStatus.textContent = err.message;
+                anomalyBody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#9b6ba8;">Error loading anomalies</td></tr>';
+                updateCharts([]);
+            } finally {
+                anomalyBtn.disabled = false;
+                anomalyBtn.textContent = 'Run Anomaly Detection';
+            }
+        }
+
+        if (anomalyBtn) {
+            anomalyBtn.addEventListener('click', runAnomaly);
+        }
+
+        // ----------- CHART HELPERS -----------
+        function toLabel(row) {
+            return `${row.submission_year}-${String(row.submission_month).padStart(2, '0')}`;
+        }
+
+        function destroyChart(instance) {
+            if (instance && typeof instance.destroy === 'function') instance.destroy();
+        }
+
+        function updateCharts(records) {
+            const labels = records.map(toLabel);
+
+            // Anomaly scores line
+            const scores = records.map(r => Number(r.anomaly_score || 0));
+            destroyChart(chartScores);
+            const ctxScore = document.getElementById('chartScores');
+            if (ctxScore && labels.length) {
+                chartScores = new Chart(ctxScore, {
+                    type: 'line',
+                    data: {
+                        labels,
+                        datasets: [{
+                            label: 'Anomaly score',
+                            data: scores,
+                            borderColor: '#7c3aed',
+                            backgroundColor: 'rgba(124,58,237,0.12)',
+                            tension: 0.25,
+                            fill: true
+                        }]
+                    },
+                    options: { scales: { y: { beginAtZero: false } }, plugins: { legend: { display: false } } }
+                });
+            }
+
+            // Cluster ratios bar
+            const highStress = records.map(r => Number(r.cluster_high_stress_ratio || 0));
+            const stable = records.map(r => Number(r.cluster_stable_ratio || 0));
+            destroyChart(chartClusters);
+            const ctxClusters = document.getElementById('chartClusters');
+            if (ctxClusters && labels.length) {
+                chartClusters = new Chart(ctxClusters, {
+                    type: 'bar',
+                    data: {
+                        labels,
+                        datasets: [
+                            { label: 'High-stress clusters', data: highStress, backgroundColor: '#b397e8' },
+                            { label: 'Stable clusters', data: stable, backgroundColor: '#593d8f' }
+                        ]
+                    },
+                    options: { responsive: true, scales: { y: { beginAtZero: true, max: 1 } } }
+                });
+            }
+
+            // Academic pressure vs sleep dual bars
+            const pressure = records.map(r => Number(r.avg_academic_pressure || 0));
+            const sleep = records.map(r => Number(r.avg_sleep_duration || 0));
+            destroyChart(chartPressureSleep);
+            const ctxPS = document.getElementById('chartPressureSleep');
+            if (ctxPS && labels.length) {
+                chartPressureSleep = new Chart(ctxPS, {
+                    type: 'bar',
+                    data: {
+                        labels,
+                        datasets: [
+                            { label: 'Academic pressure', data: pressure, backgroundColor: '#593d8f' },
+                            { label: 'Sleep duration', data: sleep, backgroundColor: '#b397e8' }
+                        ]
+                    },
+                    options: { responsive: true, scales: { y: { beginAtZero: true } } }
+                });
+            }
+        }
+
+        // ----------- USER DIRECTORY -----------
+        async function loadUsers() {
+            if (!userDirectory) return;
+            userDirectory.innerHTML = `
+                <div class="user-card skeleton-card">
+                    <div class="skeleton" style="min-width:120px;"></div>
+                    <div class="skeleton wide"></div>
+                </div>`;
+            try {
+                const res = await fetch('/admin/users');
+                const data = await res.json();
+                if (!res.ok || !data.success) throw new Error(data.message || 'Failed to load users');
+                const users = data.users || [];
+                if (!users.length) {
+                    userDirectory.innerHTML = '<div class="user-card empty-card"><span style="color:#9b6ba8;">No users found</span></div>';
+                    return;
+                }
+                userDirectory.innerHTML = '';
+                users.forEach(u => {
+                    const name = `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.email || 'User';
+                    const role = u.role || 'N/A';
+                    const email = u.email || '';
+                    const meta = [u.dob, u.profession, u.gender].filter(Boolean).join(" • ");
+                    userDirectory.insertAdjacentHTML('beforeend', `
+                        <div class="user-card">
+                            <div class="user-card-top">
+                                <div>
+                                    <div class="user-name">${name}</div>
+                                    <div class="user-role">${role}</div>
+                                </div>
+                                <span class="user-email">${email}</span>
+                            </div>
+                            <div class="user-meta">${meta || '—'}</div>
+                        </div>
+                    `);
+                });
+            } catch (err) {
+                userDirectory.innerHTML = `<div class="user-card"><span style="color:#b00020;">${err.message}</span></div>`;
+            }
+        }
+
+        // ----------- MODEL STATUS -----------
+        async function loadModelStatus() {
+            if (!modelStatusBody) return;
+            modelStatusBody.innerHTML = `
+                <div class="status-card skeleton-card">
+                    <div class="status-card-row">
+                        <span class="skeleton"></span>
+                        <span class="skeleton"></span>
+                    </div>
+                    <div class="status-card-row">
+                        <span class="skeleton wide"></span>
+                    </div>
+                </div>`;
+            try {
+                const res = await fetch('/admin/models');
+                const data = await res.json();
+                if (!res.ok || !data.success) throw new Error(data.message || 'Failed to load model status');
+                const models = data.models || [];
+                if (!models.length) {
+                    modelStatusBody.innerHTML = '<div class="status-card empty-card"><span style="color:#9b6ba8;">No data</span></div>';
+                    return;
+                }
+                modelStatusBody.innerHTML = '';
+                models.forEach(m => {
+                    const statusClass = (m.status || '').toLowerCase();
+                    const safeName = m.name || '';
+                    const safePath = m.path || '';
+                    const safeTime = m.updated_at || '';
+                    const safeMsg = m.message || '';
+                    modelStatusBody.insertAdjacentHTML('beforeend', `
+                        <div class="status-card">
+                            <div class="status-card-top">
+                                <div>
+                                    <div class="status-name">${safeName}</div>
+                                    <div class="status-path">${safePath}</div>
+                                </div>
+                                <span class="status-chip ${statusClass}">${m.status || ''}</span>
+                            </div>
+                            <div class="status-card-bottom">
+                                <div class="status-time">${safeTime}</div>
+                                <div class="status-note">${safeMsg}</div>
+                            </div>
+                        </div>
+                    `);
+                });
+            } catch (err) {
+                modelStatusBody.innerHTML = `<div class="status-card"><span style="color:#b00020;">${err.message}</span></div>`;
+            }
+        }
+
+        loadModelStatus();
+        loadUsers();
+    </script>
+</body>
+</html>

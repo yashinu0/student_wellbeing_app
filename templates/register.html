@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Create Account - Well-Being Analytics</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head>
+
+<body class="page-register">
+
+<div class="card">
+
+    <h1 class="title">Create Your Account</h1>
+    <p class="subtitle">
+        Join the platform and access your personalized wellbeing insights.
+    </p>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <div class="flash">
+          {{ messages[0] }}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('register') }}">
+
+        <!-- First Name -->
+        <div>
+            <label for="first_name">First name</label>
+            <input type="text" id="first_name" name="first_name" required>
+        </div>
+
+        <!-- Last Name -->
+        <div>
+            <label for="last_name">Last name</label>
+            <input type="text" id="last_name" name="last_name" required>
+        </div>
+
+        <!-- Date of Birth -->
+        <div>
+            <label for="dob">Date of birth</label>
+            <input type="date" id="dob" name="dob" required>
+        </div>
+
+        <!-- Gender -->
+        <div>
+            <label for="gender">Gender</label>
+            <select id="gender" name="gender" required>
+                <option value="" disabled selected>Select…</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+            </select>
+        </div>
+
+        <!-- Role -->
+        <div>
+            <label for="role">Role</label>
+            <select id="role" name="role" required>
+                <option value="" disabled selected>Select…</option>
+                <option value="student">Student / Other</option>
+                <option value="scientist">Scientist</option>
+                <option value="admin">Admin</option>
+            </select>
+        </div>
+
+        <!-- Profession -->
+        <div>
+            <label for="profession">Profession</label>
+            <select id="profession" name="profession" required disabled>
+                <option value="" disabled selected>Select…</option>
+                <option value="unemployed">Unemployed</option>
+                <option value="employee">Employee</option>
+                <option value="student">Student</option>
+                <option value="freelancer">Freelancer</option>
+            </select>
+        </div>
+
+        <!-- Email -->
+        <div class="full-width">
+            <label for="email">Email address</label>
+            <input type="email" id="email" name="email" required placeholder="you@example.com">
+        </div>
+
+        <!-- Password -->
+        <div class="full-width">
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" required>
+        </div>
+
+        <!-- Actions -->
+        <div class="actions">
+            <button type="submit" class="btn-primary">Create Account</button>
+
+            <a href="{{ url_for('login') }}" class="link">Already have an account?</a>
+        </div>
+
+    </form>
+
+</div>
+
+<script>
+    const roleSelect = document.getElementById('role');
+    const professionSelect = document.getElementById('profession');
+
+    roleSelect.addEventListener('change', function () {
+        if (this.value === 'student') {  
+            // "Other" selected → enable profession
+            professionSelect.disabled = false;
+        } else {
+            // Scientist selected → disable and reset
+            professionSelect.disabled = true;
+            professionSelect.value = "";
+        }
+    });
+</script>
+
+</body>
+</html>

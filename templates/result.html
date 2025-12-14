@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Résultats - Student Risk Analyzer</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head>
+<body class="page-result">
+    <div class="container">
+        <div class="header">
+            <h1>📊 Your Evaluation Results</h1>
+            <p>Custom analysis based on your answers</p>
+        </div>
+
+        <div class="results-grid">
+            <!-- Risk Level Card with Gauge -->
+            <div class="card">
+               <div class="card-header">
+                    <div class="card-icon risk">⚠️</div>
+                    <h2 class="card-title">Risk Level</h2>
+                </div>
+
+                <div class="card-content">
+                    <div class="risk-meter">
+
+                        <!-- RISK IMAGE ONLY -->
+                        <div class="risk-image-container" style="text-align:center; margin-bottom: 1rem;">
+                            <img
+                                id="riskImage"
+                                src="{{ url_for('static', filename='images/' + 
+                                    ('high-risk.jpg' if risk_level == 'High' else 
+                                    ('medium-risk.jpg' if risk_level == 'Medium' else 'low-risk.jpg'))
+                                ) }}"
+                                alt="Risk Level"
+                                style="width: 300px; height: 300px; object-fit: contain;"
+                            >
+                        </div>
+
+                        <!-- RISK BADGE -->
+                        <div class="risk-badge risk-{{ risk_level|lower }}" id="riskBadge">
+                            {{ risk_level }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+<!-- Severity Score Card -->
+<div class="card">
+    <div class="card-header">
+        <div class="card-icon severity">📈</div>
+        <h2 class="card-title">Detailed Score</h2>
+    </div>
+
+    <div class="card-content">
+        <p style="margin-bottom: 20px; color: #777; font-size: 13px;">
+            Complete analysis of your indicators
+        </p>
+
+        {# Conversion propre en float #}
+        {% set stress_val = (stress_academic or 0)|float %}
+        {% set sleep_q = (sleep_quality or 0)|float %}
+        {% set wellbeing_val = (wellbeing or 0)|float %}
+        {% set total_val = (severity_raw or 0)|float %}
+        {% set severity_pct_val = severity_pct if severity_pct is not none else (total_val * 100) %}
+
+        <!-- STRESS ACADEMIQUE -->
+        <div class="severity-item">
+            <div class="severity-label-row">
+                <span class="severity-label">Academic stress</span>
+
+                <span class="severity-value small-score
+                    {% if stress_val <= 4 %}score-green
+                    {% elif stress_val <= 6 %}score-orange
+                    {% else %}score-red
+                    {% endif %}
+                ">
+                    {{ stress_val|round(0) }}/10
+                </span>
+            </div>
+
+            <div class="severity-bar">
+                <div class="severity-fill
+                    {% if stress_val <= 4 %}bar-green
+                    {% elif stress_val <= 6 %}bar-orange
+                    {% else %}bar-red
+                    {% endif %}
+                " ></div>
+            </div>
+        </div>
+
+        <!-- SOMMEIL -->
+        <div class="severity-item">
+            <div class="severity-label-row">
+                <span class="severity-label">Sleep quality</span>
+                {% set sleep_labels = {
+                    1: "Moins de 5 heures",
+                    2: "5-6 heures",
+                    3: "7-8 heures",
+                    4: "Plus de 8 heures"
+                } %}
+                {% set sleep_label = sleep_labels.get(sleep_q|int, "Non renseigné") %}
+
+                <span class="severity-value small-score
+                    {% if sleep_q >= 3 %}score-green
+                    {% elif sleep_q == 2 %}score-orange
+                    {% else %}score-red
+                    {% endif %}
+                ">
+                    {{ sleep_label }}
+                </span>
+            </div>
+
+            <div class="severity-bar">
+                <div class="severity-fill
+                    {% if sleep_q >= 3 %}bar-green
+                    {% elif sleep_q == 2 %}bar-orange
+                    {% else %}bar-red
+                    {% endif %}
+                " ></div>
+            </div>
+        </div>
+
+        <!-- BIEN-ÊTRE GENERAL -->
+        <div class="severity-item">
+            <div class="severity-label-row">
+                <span class="severity-label">General well-being</span>
+
+                <span class="severity-value small-score
+                    {% if wellbeing_val >= 7 %}score-green
+                    {% elif wellbeing_val >= 4 %}score-orange
+                    {% else %}score-red
+                    {% endif %}
+                ">
+                    {{ wellbeing_val|round(0) }}/10
+                </span>
+            </div>
+
+            <div class="severity-bar">
+                <div class="severity-fill
+                    {% if wellbeing_val >= 7 %}bar-green
+                    {% elif wellbeing_val >= 4 %}bar-orange
+                    {% else %}bar-red
+                    {% endif %}
+                " ></div>
+            </div>
+        </div>
+
+        <!-- SCORE TOTAL AVEC GROSSE BARRE -->
+        <div class="total-score-box">
+            <div style="flex: 1; margin-right: 16px;">
+                <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                    <span style="color:#777; font-weight:600;">Total Score</span>
+                    <span class="final-score-number">
+                        {{ '%.1f'|format(severity_pct_val) }}%
+                    </span>
+                </div>
+
+                <div class="severity-bar severity-bar-big">
+                    <div class="severity-fill
+                        {% if total_val < 0.3 %}bar-green
+                        {% elif total_val < 0.7 %}bar-orange
+                        {% else %}bar-red
+                        {% endif %}
+                    "></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+            <!-- Cluster Profile -->
+            <div class="card cluster-card">
+                <div class="card-header">
+                    <div class="card-icon profile">📌</div>
+                    <h2 class="card-title">Your Cluster Profile</h2>
+                </div>
+                <div class="card-content">
+                    <div class="cluster-meta">
+                        <span class="cluster-badge">Cluster {{ cluster_label }}</span>
+                        <div class="cluster-name">{{ cluster_name }}</div>
+                    </div>
+                    <p class="cluster-desc">{{ reco_fixed or 'No description available.' }}</p>
+                </div>
+            </div>
+<!-- Recommendations Card - Full Width at Bottom -->
+            <div class="card recommendations-card">
+                <div class="card-header">
+                    <div class="card-icon recommendations">💡</div>
+                    <h2 class="card-title">Recommended Actions</h2>
+                </div>
+                <div class="card-content">
+                                        {% if custom_recs %}
+                    <div class="recommendations-list" id="recommendationsList">
+                        {% for rec in custom_recs %}
+                        <div class="recommendation-item">
+                            <div class="recommendation-thumb">
+                                <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" alt="placeholder">
+                            </div>
+                            <div class="recommendation-text">
+                                <strong>{{ rec }}</strong>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="empty-state">No custom advice available.</p>
+                    {% endif %}
+</div>

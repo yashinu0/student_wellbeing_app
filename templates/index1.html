@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Well-Being Analytics - Student Depression Risk Analysis</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+
+</head>
+<body class="page-home">
+    <!-- Navigation -->
+    <nav>
+        <div class="logo">📊 Well-Being Analytics</div>
+        {% set role = session.get('user_role') %}
+        <ul>
+            <li><a href="/">Home</a></li>
+            {% if role == 'admin' %}
+                <li><a href="/admin">Admin</a></li>
+            {% elif role == 'scientist' %}
+                <li><a href="/datascientist">Data Scientist</a></li>
+            {% elif role in ('student','other') %}
+                <li><a href="/student">Student Portal</a></li>
+            {% else %}
+                <li><a href="/student">Student Portal</a></li>
+                <li><a href="/datascientist">Data Scientist</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1>Understanding Your <span class="gradient-text">Well-Being</span></h1>
+            <p class="subtitle">ML-Powered Student Mental Health Analysis</p>
+            <p class="description">
+                Our advanced machine learning models analyze key factors affecting student mental health and well-being. 
+                Get personalized insights, understand your risk profile, and access actionable recommendations.
+            </p>
+
+            {% if not session.get('user_email') %}
+            <div class="button-group">
+                <a href="/login" class="btn btn-primary">Login</a>
+                <a href="/predict" class="btn btn-secondary">Continue as guest</a>
+            </div>
+            {% else %}
+            {% set role = session.get('user_role') %}
+            <div class="button-group">
+                {% if role == 'other' %}
+                <a href="/student" class="btn btn-primary">Start Assessment</a>
+                {% else %}
+                <a href="/predict" class="btn btn-primary">Start Assessment</a>
+                {% endif %}
+                <a href="/logout" class="btn btn-secondary">Logout</a>
+            </div>
+            {% endif %}
+
+
+            <!-- Feature Preview -->
+            <div class="features">
+                <div class="feature-card">
+                    <div class="feature-icon">🎯</div>
+                    <h3>Risk Detection</h3>
+                    <p>Identify depression risk factors through comprehensive analysis of sleep, academic pressure, and social support.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">👤</div>
+                    <h3>Profile Clustering</h3>
+                    <p>Discover your student profile cluster and connect with similar students for peer support.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">💡</div>
+                    <h3>Smart Recommendations</h3>
+                    <p>Receive personalized action plans based on your specific risk profile and well-being factors.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📈</div>
+                    <h3>Severity Tracking</h3>
+                    <p>Monitor your well-being score and track changes over time with visual progress indicators.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+</body>
+</html>

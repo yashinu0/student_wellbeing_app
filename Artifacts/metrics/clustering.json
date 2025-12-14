@@ -1,0 +1,20 @@
+{
+  "KMeans": {
+    "silhouette": 0.2451345021256226,
+    "calinski_harabasz": 7500.496302617455,
+    "davies_bouldin": 1.6168425090652674,
+    "n_clusters": 2
+  },
+  "DBSCAN": {
+    "silhouette": 0.1121400237541291,
+    "calinski_harabasz": 2362.3614921604276,
+    "davies_bouldin": 2.5705683765019876,
+    "n_clusters": 4
+  },
+  "CAH": {
+    "silhouette": 0.23276429784522654,
+    "calinski_harabasz": 6881.881342874004,
+    "davies_bouldin": 1.6637479256238832,
+    "n_clusters": 2
+  }
+}
