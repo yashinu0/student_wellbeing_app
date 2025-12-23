@@ -6,6 +6,10 @@ MindTrack is a platform for analyzing student well-being using predictive analyt
 
 ➡️ [Watch the video](https://youtu.be/BsEsyndKYQM)
 
+## 📄 Project Report
+
+📘 [Read report (PDF)](https://github.com/yashinu0/student_wellbeing_app/blob/main/rapport%20de%20projet.pdf)
+
 ## 🚀 Installation
 
 ### Install Python
