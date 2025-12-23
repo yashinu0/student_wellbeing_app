@@ -1,8 +1,16 @@
+# 🎓 MindTrack – Student Well-Being Analytics
+
+MindTrack is a platform for analyzing student well-being using predictive analytics, profile segmentation, and smart dashboards. It helps universities detect and respond to at-risk situations early by transforming data into actionable insights.
+
+## 🎥 Video Demo
+
+[![Watch the video](https://img.youtube.com/vi/BsEsyndKYQM/maxresdefault.jpg)](https://www.youtube.com/watch?v=BsEsyndKYQM)
+
 ## 🚀 Installation
 
 ### Install Python
-- Download Python from https://www.python.org/downloads/
-- Make sure to check **Add Python to PATH**
+- Download Python from [python.org](https://www.python.org/downloads/)
+- Make sure to check **Add Python to PATH** during installation
 
 ### Open Project on VS Code
 - Open the project folder in Visual Studio Code
