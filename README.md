@@ -4,7 +4,7 @@ MindTrack is a platform for analyzing student well-being using predictive analyt
 
 ## 🎥 Video Demo
 
-[![Watch the video](https://img.youtube.com/vi/BsEsyndKYQM/maxresdefault.jpg)](https://www.youtube.com/watch?v=BsEsyndKYQM)
+➡️ [Watch the video](https://youtu.be/BsEsyndKYQM)
 
 ## 🚀 Installation
 
